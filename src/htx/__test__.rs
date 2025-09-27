@@ -3,8 +3,8 @@ mod test {
 
     use crate::{
         base::BaseConnection,
-        binance::main::Binance,
         connections::Connection,
+        htx::main::HTX,
         types::{Instrument, MarketType, Timeframe},
     };
 
@@ -13,12 +13,12 @@ mod test {
         let instrument = Instrument {
             asset_id: "bitcoin".to_owned(),
             pair: "BTCUSDT".to_owned(),
-            connection: Connection::Binance,
+            connection: Connection::HTX,
             market_type: MarketType::Spot,
             timeframe: Timeframe::H1,
         };
 
-        match Binance::get_candles(instrument).await {
+        match HTX::get_candles(instrument).await {
             Ok(result) => assert!(result.len() >= 5, "Candles length is < 5"),
             Err(err) => panic!("{}", err),
         }
@@ -28,13 +28,13 @@ mod test {
     async fn test_derivatives_candles() {
         let instrument = Instrument {
             asset_id: "bitcoin".to_owned(),
-            pair: "BTCUSDT".to_owned(),
-            connection: Connection::Binance,
+            pair: "BTC-USDT".to_owned(),
+            connection: Connection::HTX,
             market_type: MarketType::Derivatives,
             timeframe: Timeframe::H1,
         };
 
-        match Binance::get_candles(instrument).await {
+        match HTX::get_candles(instrument).await {
             Ok(result) => assert!(result.len() >= 5, "Candles length is < 5"),
             Err(err) => panic!("{}", err),
         }

@@ -25,19 +25,16 @@ impl BaseConnection for BloFin {
             Timeframe::MN1 => "1M",
         };
 
-        let url = format!(
-            "https://openapi.blofin.com/api/v1/market/candles?instId={}&bar={}",
-            instrument.pair, blofin_timeframe
-        );
+        let url = format!("https://openapi.blofin.com/api/v1/market/candles?instId={}&bar={}", instrument.pair, blofin_timeframe);
 
         let response: DataWrapper<Vec<Value>> = reqwest::get(&url).await?.json().await?;
 
         let mut candles = Vec::with_capacity(response.data.len());
 
         for (index, value) in response.data.iter().enumerate().rev() {
-            let candle_array = value.as_array().ok_or_else(|| {
-                CandlesError::Other(format!("Expected array for candle data at index {index}"))
-            })?;
+            let candle_array = value
+                .as_array()
+                .ok_or_else(|| CandlesError::Other(format!("Expected array for candle data at index {index}")))?;
 
             if candle_array.len() < 6 {
                 return Err(CandlesError::Other(format!(
@@ -50,19 +47,9 @@ impl BaseConnection for BloFin {
             candles.push(Candle {
                 timestamp: candle_array[0]
                     .as_str()
-                    .ok_or_else(|| {
-                        CandlesError::Other(format!(
-                            "Invalid timestamp at index {} with value {}",
-                            index, candle_array[0]
-                        ))
-                    })?
+                    .ok_or_else(|| CandlesError::Other(format!("Invalid timestamp at index {} with value {}", index, candle_array[0])))?
                     .parse::<i64>()
-                    .map_err(|_| {
-                        CandlesError::Other(format!(
-                            "Failed to parse timestamp at index {} with value {}",
-                            index, candle_array[0]
-                        ))
-                    })?,
+                    .map_err(|_| CandlesError::Other(format!("Failed to parse timestamp at index {} with value {}", index, candle_array[0])))?,
                 open: parse_string_to_f64(&candle_array[1], "open price", index)?,
                 high: parse_string_to_f64(&candle_array[2], "high price", index)?,
                 low: parse_string_to_f64(&candle_array[3], "low price", index)?,

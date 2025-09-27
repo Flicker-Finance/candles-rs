@@ -26,19 +26,11 @@ impl BaseConnection for Binance {
         };
 
         let url = match instrument.market_type {
-            MarketType::Spot => format!(
-                "https://www.binance.com/api/v3/klines?symbol={}&interval={}",
-                instrument.pair, binance_timeframe
-            ),
-            MarketType::Derivatives => format!(
-                "https://fapi.binance.com/fapi/v1/klines?symbol={}&interval={}",
-                instrument.pair, binance_timeframe
-            ),
+            MarketType::Spot => format!("https://www.binance.com/api/v3/klines?symbol={}&interval={}", instrument.pair, binance_timeframe),
+            MarketType::Derivatives => format!("https://fapi.binance.com/fapi/v1/klines?symbol={}&interval={}", instrument.pair, binance_timeframe),
         };
 
-        let response = reqwest::get(&url)
-            .await
-            .map_err(|e| CandlesError::ApiError(e.to_string()))?;
+        let response = reqwest::get(&url).await.map_err(|e| CandlesError::ApiError(e.to_string()))?;
 
         if !response.status().is_success() {
             return Err(CandlesError::Other(format!(
@@ -56,9 +48,7 @@ impl BaseConnection for Binance {
         let mut candles = Vec::with_capacity(candles_api.len());
 
         for (index, value) in candles_api.iter().enumerate() {
-            let candle_array = value.as_array().ok_or(CandlesError::Other(format!(
-                "Expected array for candle data at index {index}"
-            )))?;
+            let candle_array = value.as_array().ok_or(CandlesError::Other(format!("Expected array for candle data at index {index}")))?;
 
             if candle_array.len() < 6 {
                 return Err(CandlesError::Other(format!(
@@ -69,9 +59,7 @@ impl BaseConnection for Binance {
             }
 
             candles.push(Candle {
-                timestamp: candle_array[0].as_i64().ok_or(CandlesError::Other(format!(
-                    "Invalid timestamp at index {index}"
-                )))?,
+                timestamp: candle_array[0].as_i64().ok_or(CandlesError::Other(format!("Invalid timestamp at index {index}")))?,
                 open: parse_string_to_f64(&candle_array[1], "open price", index)?,
                 high: parse_string_to_f64(&candle_array[2], "high price", index)?,
                 low: parse_string_to_f64(&candle_array[3], "low price", index)?,

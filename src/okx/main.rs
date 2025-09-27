@@ -12,9 +12,7 @@ pub struct OKX;
 
 #[async_trait]
 impl BaseConnection for OKX {
-    async fn get_candles(
-        instrument: crate::types::Instrument,
-    ) -> Result<Vec<crate::types::Candle>, crate::errors::CandlesError> {
+    async fn get_candles(instrument: crate::types::Instrument) -> Result<Vec<crate::types::Candle>, crate::errors::CandlesError> {
         let okx_timeframe = match instrument.timeframe {
             Timeframe::M3 => "3m",
             Timeframe::M5 => "5m",
@@ -27,14 +25,11 @@ impl BaseConnection for OKX {
             Timeframe::MN1 => "1M",
         };
 
-        let url = format!(
-            "https://www.okx.com/api/v5/market/candles?instId={}&bar={}&limit=300",
-            instrument.pair, okx_timeframe
-        );
+        let url = format!("https://www.okx.com/api/v5/market/candles?instId={}&bar={}&limit=300", instrument.pair, okx_timeframe);
 
         let response = reqwest::get(&url)
             .await
-            .map_err(|e| CandlesError::Other(format!("Failed to fetch candles from OKX: {}", e)))?;
+            .map_err(|e| CandlesError::Other(format!("Failed to fetch candles from OKX: {e}")))?;
 
         if !response.status().is_success() {
             return Err(CandlesError::Other(format!(
@@ -44,16 +39,14 @@ impl BaseConnection for OKX {
             )));
         }
 
-        let response_body: DataWrapper<Vec<Value>> = response.json().await.map_err(|e| {
-            CandlesError::Other(format!("Failed to parse OKX JSON response: {}", e))
-        })?;
+        let response_body: DataWrapper<Vec<Value>> = response.json().await.map_err(|e| CandlesError::Other(format!("Failed to parse OKX JSON response: {e}")))?;
 
         let mut candles = Vec::with_capacity(response_body.data.len());
 
         for (index, value) in response_body.data.iter().enumerate().rev() {
-            let candle_array = value.as_array().ok_or_else(|| {
-                CandlesError::Other(format!("Expected array for candle data at index {}", index))
-            })?;
+            let candle_array = value
+                .as_array()
+                .ok_or_else(|| CandlesError::Other(format!("Expected array for candle data at index {index}")))?;
 
             if candle_array.len() < 6 {
                 return Err(CandlesError::Other(format!(
@@ -66,19 +59,9 @@ impl BaseConnection for OKX {
             candles.push(Candle {
                 timestamp: candle_array[0]
                     .as_str()
-                    .ok_or_else(|| {
-                        CandlesError::Other(format!(
-                            "Invalid timestamp at index {} with value {}",
-                            index, candle_array[0]
-                        ))
-                    })?
+                    .ok_or_else(|| CandlesError::Other(format!("Invalid timestamp at index {} with value {}", index, candle_array[0])))?
                     .parse::<i64>()
-                    .map_err(|_| {
-                        CandlesError::Other(format!(
-                            "Failed to parse timestamp at index {} with value {}",
-                            index, candle_array[0]
-                        ))
-                    })?,
+                    .map_err(|_| CandlesError::Other(format!("Failed to parse timestamp at index {} with value {}", index, candle_array[0])))?,
                 open: parse_string_to_f64(&candle_array[1], "open price", index)?,
                 high: parse_string_to_f64(&candle_array[2], "high price", index)?,
                 low: parse_string_to_f64(&candle_array[3], "low price", index)?,

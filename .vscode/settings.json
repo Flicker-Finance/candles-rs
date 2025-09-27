@@ -3,7 +3,10 @@
         "bingx",
         "blofin",
         "BTCUSDT",
+        "ohlcv",
+        "Onik",
         "reqwest",
+        "Sahakyan",
         "serde",
         "vtable"
     ]

@@ -51,7 +51,7 @@ impl BaseConnection for BingX {
                     }
 
                     candles.push(Candle {
-                        timestamp: candle_array[6]
+                        timestamp: candle_array[0]
                             .as_i64()
                             .ok_or(CandlesError::Other(format!("Failed to parse timestamp at index {} with value {}", index, candle_array[0])))?,
                         open: parse_string_to_f64(&candle_array[1], "open price", index)?,

@@ -6,6 +6,7 @@ mod test {
         binance::main::Binance,
         connections::Connection,
         types::{Instrument, MarketType, Timeframe},
+        utils::examine_candles,
     };
 
     #[tokio::test]
@@ -19,7 +20,7 @@ mod test {
         };
 
         match Binance::get_candles(instrument).await {
-            Ok(result) => assert!(result.len() >= 5, "Candles length is < 5"),
+            Ok(result) => examine_candles(&result),
             Err(err) => panic!("{}", err),
         }
     }
@@ -35,7 +36,7 @@ mod test {
         };
 
         match Binance::get_candles(instrument).await {
-            Ok(result) => assert!(result.len() >= 5, "Candles length is < 5"),
+            Ok(result) => examine_candles(&result),
             Err(err) => panic!("{}", err),
         }
     }

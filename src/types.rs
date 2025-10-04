@@ -26,7 +26,7 @@ pub enum Timeframe {
     MN1,
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct Instrument {
     pub asset_id: String,
     pub pair: String,
@@ -35,7 +35,7 @@ pub struct Instrument {
     pub timeframe: Timeframe,
 }
 
-#[derive(Serialize, Clone)]
+#[derive(Debug, Serialize, Clone)]
 pub struct Candle {
     pub timestamp: i64,
     pub open: f64,

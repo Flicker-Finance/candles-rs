@@ -39,9 +39,12 @@ impl BaseConnection for HTX {
 
         let response: DataWrapper<Vec<HtxKlineResponse>> = reqwest::get(&url).await?.json().await?;
 
-        Ok(response
-            .data
-            .into_iter()
+        let iterator: Box<dyn Iterator<Item = _>> = match instrument.market_type {
+            MarketType::Spot => Box::new(response.data.into_iter().rev()),
+            MarketType::Derivatives => Box::new(response.data.into_iter()),
+        };
+
+        Ok(iterator
             .map(|f| Candle {
                 timestamp: f.id,
                 open: f.open,

@@ -3,8 +3,9 @@ use strum::{Display, EnumString};
 
 use crate::connections::Connection;
 
-#[derive(Debug, Hash, PartialEq, Eq, Serialize, Deserialize, Default, Clone)]
+#[derive(Debug, Hash, PartialEq, Eq, Serialize, Deserialize, Default, Clone, Display, EnumString)]
 #[serde(rename_all = "lowercase")]
+#[strum(serialize_all = "lowercase")]
 pub enum MarketType {
     #[default]
     Spot,

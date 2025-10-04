@@ -9,6 +9,7 @@ use crate::{
     bybit::main::Bybit,
     errors::CandlesError,
     htx::main::HTX,
+    mexc::main::Mexc,
     okx::main::OKX,
     types::{Candle, Instrument},
 };
@@ -23,6 +24,7 @@ pub enum Connection {
     Bybit,
     BingX,
     HTX,
+    Mexc,
 }
 
 impl Connection {
@@ -34,6 +36,7 @@ impl Connection {
             Connection::Bybit => Bybit::get_candles(instrument).await,
             Connection::BingX => BingX::get_candles(instrument).await,
             Connection::HTX => HTX::get_candles(instrument).await,
+            Connection::Mexc => Mexc::get_candles(instrument).await,
         }
     }
 }

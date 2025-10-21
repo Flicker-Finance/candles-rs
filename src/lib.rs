@@ -41,3 +41,9 @@ pub mod mexc {
     pub mod main;
     mod types;
 }
+
+pub mod uniswap_v3 {
+    mod __test__;
+    pub mod main;
+    mod types;
+}

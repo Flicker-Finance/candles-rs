@@ -1,14 +1,14 @@
 [package]
 name = "candles-rs"
-version = "0.1.4"
+version = "0.1.5"
 edition = "2024"
 license = "MIT"
 authors = ["Onik Sahakyan <os@flicker.finance|onik.sahakyan.09@gmail.com>"]
-description = "A Rust library for fetching candlestick (OHLCV) data from multiple cryptocurrency exchanges including Binance, OKX, Bybit, BloFin, and BingX."
+description = "A Rust library for fetching candlestick (OHLCV) data from multiple cryptocurrency exchanges (Binance, OKX, Bybit, BloFin, BingX, HTX, MEXC) and decentralized exchanges (Uniswap V3 via The Graph)."
 repository = "https://github.com/Flicker-Finance/candles-rs"
 documentation = "https://docs.rs/candles-rs"
 readme = "README.md"
-keywords = ["cryptocurrency", "trading", "candles", "ohlcv", "exchanges"]
+keywords = ["cryptocurrency", "trading", "candles", "ohlcv", "uniswap"]
 categories = ["finance", "mathematics"]
 exclude = ["tests/*", "examples/*", ".github/*"]
 rust-version = "1.85.0"

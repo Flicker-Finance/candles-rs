@@ -12,6 +12,7 @@ use crate::{
     mexc::main::Mexc,
     okx::main::OKX,
     types::{Candle, Instrument},
+    uniswap_v3::main::UniswapV3,
 };
 
 #[derive(Hash, PartialEq, Eq, Debug, Display, EnumString, Serialize, Deserialize, Clone)]
@@ -25,6 +26,8 @@ pub enum Connection {
     BingX,
     HTX,
     Mexc,
+
+    UniswapV3,
 }
 
 impl Connection {
@@ -37,6 +40,7 @@ impl Connection {
             Connection::BingX => BingX::get_candles(instrument).await,
             Connection::HTX => HTX::get_candles(instrument).await,
             Connection::Mexc => Mexc::get_candles(instrument).await,
+            Connection::UniswapV3 => UniswapV3::get_candles(instrument).await,
         }
     }
 }

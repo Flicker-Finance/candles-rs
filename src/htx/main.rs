@@ -46,7 +46,7 @@ impl BaseConnection for HTX {
 
         Ok(iterator
             .map(|f| Candle {
-                timestamp: f.id,
+                timestamp: f.id * 1000,
                 open: f.open,
                 high: f.high,
                 low: f.low,

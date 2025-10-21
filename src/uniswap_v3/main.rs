@@ -1,6 +1,7 @@
 use alloy::primitives::{Address, B256, I256, U256, keccak256};
 use alloy::providers::{Provider, ProviderBuilder};
 use alloy::rpc::types::{Filter, Log};
+use alloy::transports::http::Http;
 use async_trait::async_trait;
 use std::collections::BTreeMap;
 use std::time::Duration;
@@ -49,6 +50,11 @@ impl UniswapV3 {
 
         let pool_addr: Address = pool_address.parse().map_err(|e| CandlesError::Other(format!("Invalid pool address: {e}")))?;
 
+        // Fetch token addresses and decimals
+        let (token0, token1) = Self::get_pool_tokens(&provider, pool_addr).await?;
+        let decimals0 = Self::get_token_decimals(&provider, token0).await?;
+        let decimals1 = Self::get_token_decimals(&provider, token1).await?;
+
         let batch_size = std::env::var("UNISWAP_BATCH_SIZE").ok().and_then(|s| s.parse::<u64>().ok()).unwrap_or(1000);
 
         let max_blocks_to_scan = 200_000;
@@ -71,24 +77,27 @@ impl UniswapV3 {
                 .await
                 .map_err(|e| CandlesError::Other(format!("Failed to fetch logs for blocks {current_from}-{batch_to}: {e}")))?;
 
-            println!("batch_logs - {} candles - {}", batch_logs.len(), candle_map.len());
-
             for log in batch_logs {
                 let (timestamp, amount0, amount1) = match Self::decode_swap_log(&log) {
                     Ok(data) => data,
                     Err(_) => continue,
                 };
 
-                let amt0 = if amount0.is_negative() {
+                // Parse raw amounts to f64
+                let amt0_raw = if amount0.is_negative() {
                     -(amount0.abs().to_string().parse::<f64>().unwrap_or(0.0))
                 } else {
                     amount0.to_string().parse::<f64>().unwrap_or(0.0)
                 };
-                let amt1 = if amount1.is_negative() {
+                let amt1_raw = if amount1.is_negative() {
                     -(amount1.abs().to_string().parse::<f64>().unwrap_or(0.0))
                 } else {
                     amount1.to_string().parse::<f64>().unwrap_or(0.0)
                 };
+
+                // Normalize by token decimals
+                let amt0 = amt0_raw / 10_f64.powi(decimals0 as i32);
+                let amt1 = amt1_raw / 10_f64.powi(decimals1 as i32);
 
                 if amt0.abs() < f64::EPSILON || amt1.abs() < f64::EPSILON {
                     continue;
@@ -159,7 +168,7 @@ impl UniswapV3 {
             return Err(CandlesError::Other("Invalid log format".to_string()));
         }
 
-        let timestamp = log.block_number.ok_or_else(|| CandlesError::Other("Missing block number".to_string()))? as i64 * 12 * 1000;
+        let timestamp = log.block_timestamp.ok_or_else(|| CandlesError::Other("Missing block timestamp".to_string()))? as i64 * 1000;
 
         let data = &log.data().data;
 
@@ -188,6 +197,50 @@ impl UniswapV3 {
         };
 
         Ok((timestamp, amount0, amount1))
+    }
+
+    async fn get_token_decimals(provider: &impl Provider<Http<reqwest::Client>>, token_address: Address) -> Result<u8, CandlesError> {
+        // ERC20 decimals() function signature
+        let decimals_selector = keccak256("decimals()");
+        let calldata = decimals_selector[0..4].to_vec();
+
+        let tx = alloy::rpc::types::TransactionRequest::default().to(token_address).input(calldata.into());
+
+        let result = provider.call(&tx).await.map_err(|e| CandlesError::Other(format!("Failed to call decimals(): {e}")))?;
+
+        if result.len() < 32 {
+            return Err(CandlesError::Other("Invalid decimals response".to_string()));
+        }
+
+        // decimals returns uint8, but it's padded to 32 bytes
+        Ok(result[31])
+    }
+
+    async fn get_pool_tokens(provider: &impl Provider<Http<reqwest::Client>>, pool_address: Address) -> Result<(Address, Address), CandlesError> {
+        // Uniswap V2 token0() and token1() function signatures
+        let token0_selector = keccak256("token0()");
+        let token1_selector = keccak256("token1()");
+
+        let token0_calldata = token0_selector[0..4].to_vec();
+        let token1_calldata = token1_selector[0..4].to_vec();
+
+        let tx0 = alloy::rpc::types::TransactionRequest::default().to(pool_address).input(token0_calldata.into());
+
+        let tx1 = alloy::rpc::types::TransactionRequest::default().to(pool_address).input(token1_calldata.into());
+
+        let result0 = provider.call(&tx0).await.map_err(|e| CandlesError::Other(format!("Failed to call token0(): {e}")))?;
+
+        let result1 = provider.call(&tx1).await.map_err(|e| CandlesError::Other(format!("Failed to call token1(): {e}")))?;
+
+        if result0.len() < 32 || result1.len() < 32 {
+            return Err(CandlesError::Other("Invalid token address response".to_string()));
+        }
+
+        // Addresses are returned as 32 bytes with 12 bytes of padding
+        let token0 = Address::from_slice(&result0[12..32]);
+        let token1 = Address::from_slice(&result1[12..32]);
+
+        Ok((token0, token1))
     }
 
     fn get_timeframe_ms(timeframe: &Timeframe) -> i64 {

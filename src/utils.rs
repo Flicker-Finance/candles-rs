@@ -1,5 +1,6 @@
 use crate::{errors::CandlesError, types::Candle};
-use chrono::{DateTime, Duration};
+use chrono::Utc;
+use chrono::{DateTime, Datelike, Duration};
 use serde::Deserialize;
 use serde_json::Value;
 
@@ -41,8 +42,6 @@ pub fn parse_string_to_f64(val: &Value, field: &str, index: usize) -> Result<f64
 }
 
 pub fn examine_candles(candles: &[Candle]) {
-    use chrono::Utc;
-
     assert!(!candles.is_empty(), "Candles array is empty");
     assert!(candles.len() >= 5, "Candles length is < 5");
 
@@ -77,6 +76,14 @@ pub fn examine_candles(candles: &[Candle]) {
         candle_time,
         candle.timestamp,
         now
+    );
+
+    // Check timestamp year is current year
+    assert!(
+        candle_time.year() == now.year(),
+        "Timestamp year {} should be current year {}",
+        candle_time.year(),
+        now.year()
     );
 
     // Check high >= low

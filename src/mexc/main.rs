@@ -76,7 +76,7 @@ impl BaseConnection for Mexc {
 
                 for (index, timestamp) in response.data.time.into_iter().enumerate() {
                     candles.push(Candle {
-                        timestamp,
+                        timestamp: timestamp * 1000,
                         open: response.data.open[index],
                         high: response.data.high[index],
                         low: response.data.low[index],

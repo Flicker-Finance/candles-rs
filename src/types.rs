@@ -38,7 +38,7 @@ pub struct Instrument {
 
 #[derive(Debug, Serialize, Clone)]
 pub struct Candle {
-    pub timestamp: i64,
+    pub timestamp: i64, // Timestamp in milliseconds
     pub open: f64,
     pub high: f64,
     pub low: f64,

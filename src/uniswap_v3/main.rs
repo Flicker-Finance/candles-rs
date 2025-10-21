@@ -50,7 +50,8 @@ impl UniswapV3 {
 
         let pool_addr: Address = pool_address.parse().map_err(|e| CandlesError::Other(format!("Invalid pool address: {e}")))?;
 
-        const BATCH_SIZE: u64 = 1000;
+        let batch_size = std::env::var("UNISWAP_BATCH_SIZE").ok().and_then(|s| s.parse::<u64>().ok()).unwrap_or(1000);
+
         let total_blocks_needed = ((limit * 10).max(10000) as u64).min(50000);
         let from_block = current_block.saturating_sub(total_blocks_needed);
 
@@ -58,7 +59,7 @@ impl UniswapV3 {
         let mut current_from = from_block;
 
         while current_from < current_block && all_logs.len() < limit {
-            let batch_to = (current_from + BATCH_SIZE - 1).min(current_block);
+            let batch_to = (current_from + batch_size - 1).min(current_block);
 
             let filter = Filter::new().address(pool_addr).select(current_from..=batch_to).event_signature(vec![SWAP_EVENT_SIGNATURE]);
 

@@ -34,13 +34,4 @@ impl Chain {
             _ => None,
         }
     }
-
-    #[allow(dead_code)]
-    pub fn get_chain_id(&self) -> u64 {
-        match self {
-            Chain::Ethereum => 1,
-            Chain::Base => 8453,
-            Chain::Bnb => 56,
-        }
-    }
 }

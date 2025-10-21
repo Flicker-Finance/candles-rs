@@ -108,6 +108,10 @@ export RPC_URL="https://your-rpc-endpoint.com"
 export ETHEREUM_RPC_URL="https://eth-mainnet.g.alchemy.com/v2/YOUR-API-KEY"
 export BASE_RPC_URL="https://base-mainnet.g.alchemy.com/v2/YOUR-API-KEY"
 export BNB_RPC_URL="https://bsc-dataseed1.binance.org"
+
+# Optional: Adjust batch size for eth_getLogs (default: 1000)
+# Some RPCs have stricter limits (e.g., 500 for some Polygon nodes)
+export UNISWAP_BATCH_SIZE=500
 ```
 
 **Usage**:

@@ -112,6 +112,9 @@ export BNB_RPC_URL="https://bsc-dataseed1.binance.org"
 # Optional: Adjust batch size for eth_getLogs (default: 1000)
 # Some RPCs have stricter limits (e.g., 500 for some Polygon nodes)
 export UNISWAP_BATCH_SIZE=500
+
+# Optional: Set minimum number of candles required (default: 250)
+export UNISWAP_MIN_CANDLES=300
 ```
 
 **Usage**:
@@ -131,6 +134,8 @@ let candles = instrument.connection.get_candles(instrument).await?;
 
 **Pair Format**: `chain_poolAddress` or `chain_poolAddress_inverted`
 - Use `_inverted` suffix for human-readable prices (e.g., $4,021 vs 0.000249)
+- **Important**: Must be a Uniswap V3 **pool** address, not a router contract
+- Find pool addresses at [Uniswap Info](https://info.uniswap.org)
 
 ## Data Types
 

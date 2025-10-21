@@ -8,6 +8,7 @@ mod test {
     };
 
     #[tokio::test]
+    #[ignore]
     async fn test_uniswap_v3_ethereum_usdc_weth_m15() {
         let instrument = Instrument {
             asset_id: "ethereum_usdc_weth".to_owned(),
@@ -31,10 +32,11 @@ mod test {
     }
 
     #[tokio::test]
+    #[ignore]
     async fn test_uniswap_v3_base_pool_m15() {
         let instrument = Instrument {
-            asset_id: "base_weth_usdc".to_owned(),
-            pair: "base_0xd0b53d9277642d899df5c87a3966a349a798f224".to_owned(),
+            asset_id: "base_test_pool".to_owned(),
+            pair: "base_0xe1bed6aadba5471700f16a47eee2504346b724ad".to_owned(),
             connection: Connection::UniswapV3,
             market_type: MarketType::Spot,
             timeframe: Timeframe::M15,

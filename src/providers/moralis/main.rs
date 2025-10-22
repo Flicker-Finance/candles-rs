@@ -1,10 +1,16 @@
+use alloy::primitives::Address;
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
+use std::str::FromStr;
 
 use crate::{
     errors::CandlesError,
+    modules::chains::Chain,
     modules::pairs::parse_pair,
-    providers::{base::BaseConnection, moralis::types::MoralisOhlcvResponse},
+    providers::{
+        base::BaseConnection,
+        moralis::types::{MoralisOhlcvResponse, TokenPriceResponse},
+    },
     types::{Candle, Instrument, Timeframe},
 };
 
@@ -33,6 +39,54 @@ impl Moralis {
             }),
         }
     }
+
+    /// Fetches current token price information from Moralis API
+    ///
+    /// # Arguments
+    /// * `token_address` - The contract address of the token
+    /// * `chain` - Optional blockchain to query. If None, Moralis will auto-detect
+    ///
+    /// # Example
+    /// ```ignore
+    /// use candles_rs::providers::moralis::Moralis;
+    /// use candles_rs::modules::chains::Chain;
+    ///
+    /// let price = Moralis::get_token_price(
+    ///     "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+    ///     Some(Chain::Ethereum)
+    /// ).await?;
+    ///
+    /// println!("Price: ${}", price.usd_price);
+    /// ```
+    pub async fn get_token_price(token_address: &str, chain: Option<Chain>) -> Result<TokenPriceResponse, CandlesError> {
+        Address::from_str(token_address).map_err(|_| CandlesError::InvalidAddress(token_address.to_string()))?;
+
+        let api_key = std::env::var("MORALIS_API_KEY").map_err(|_| CandlesError::MissingEnvVar("MORALIS_API_KEY".to_string()))?;
+
+        let url = format!("https://deep-index.moralis.io/api/v2.2/erc20/{token_address}/price");
+
+        let client = reqwest::Client::new();
+        let mut request = client.get(&url).header("X-API-Key", &api_key);
+
+        if let Some(chain_value) = chain {
+            request = request.query(&[("chain", chain_value.as_str_moralis())]);
+        }
+
+        let response = request.send().await.map_err(|e| CandlesError::ApiError(format!("Failed to fetch token price: {e}")))?;
+
+        if !response.status().is_success() {
+            let status = response.status().as_u16();
+            let body = response.text().await.unwrap_or_default();
+            return Err(CandlesError::HttpError { status, body });
+        }
+
+        let price_info: TokenPriceResponse = response
+            .json()
+            .await
+            .map_err(|e| CandlesError::JsonParseError(format!("Failed to parse Moralis token price response: {e}")))?;
+
+        Ok(price_info)
+    }
 }
 
 #[async_trait]
@@ -43,11 +97,8 @@ impl BaseConnection for Moralis {
         let (chain, pair_address, _inverted) = parse_pair(&instrument.pair)?;
         let timeframe = Self::get_moralis_timeframe(&instrument.timeframe)?;
 
-        // Calculate date range - get data from 30 days ago to now
         let now = Utc::now();
         let from_date = now - chrono::Duration::days(30);
-
-        // Format dates in the required format: 2025-01-01T10:00:00.000
         let from_date_str = from_date.format("%Y-%m-%dT%H:%M:%S%.3f").to_string();
         let to_date_str = now.format("%Y-%m-%dT%H:%M:%S%.3f").to_string();
 
@@ -74,7 +125,6 @@ impl BaseConnection for Moralis {
             .result
             .into_iter()
             .map(|candle| {
-                // Parse timestamp (ISO 8601 format) to milliseconds
                 let timestamp_ms = DateTime::parse_from_rfc3339(&candle.timestamp)
                     .map_err(|e| CandlesError::ParseError {
                         field: "timestamp".to_string(),
@@ -93,7 +143,6 @@ impl BaseConnection for Moralis {
             })
             .collect::<Result<Vec<Candle>, CandlesError>>()?;
 
-        // Moralis returns candles in descending order (newest first), reverse to ascending (oldest first)
         candles.reverse();
 
         Ok(candles)

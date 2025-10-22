@@ -47,5 +47,5 @@ pub mod uniswap_v3 {
 pub mod moralis {
     mod __test__;
     pub mod main;
-    mod types;
+    pub mod types;
 }

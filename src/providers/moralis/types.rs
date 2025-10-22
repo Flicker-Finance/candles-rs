@@ -1,5 +1,59 @@
 use serde::Deserialize;
 
+#[derive(Deserialize, Debug, Clone)]
+pub struct TokenPriceResponse {
+    #[serde(rename = "tokenName")]
+    pub token_name: String,
+
+    #[serde(rename = "tokenSymbol")]
+    pub token_symbol: String,
+
+    #[serde(rename = "tokenLogo")]
+    pub token_logo: Option<String>,
+
+    #[serde(rename = "tokenDecimals")]
+    pub token_decimals: String,
+
+    #[serde(rename = "nativePrice")]
+    pub native_price: Option<NativePrice>,
+
+    #[serde(rename = "usdPrice")]
+    #[serde(deserialize_with = "deserialize_number_from_any")]
+    pub usd_price: f64,
+
+    #[serde(rename = "usdPriceFormatted")]
+    pub usd_price_formatted: String,
+
+    #[serde(rename = "exchangeAddress")]
+    pub exchange_address: Option<String>,
+
+    #[serde(rename = "exchangeName")]
+    pub exchange_name: Option<String>,
+
+    #[serde(rename = "tokenAddress")]
+    pub token_address: String,
+
+    #[serde(rename = "24hrPercentChange")]
+    pub percent_change_24h: Option<String>,
+
+    #[serde(rename = "securityScore")]
+    pub security_score: Option<u8>,
+
+    #[serde(rename = "pairAddress")]
+    pub pair_address: Option<String>,
+
+    #[serde(rename = "pairTotalLiquidityUsd")]
+    pub pair_total_liquidity_usd: Option<String>,
+}
+
+#[derive(Deserialize, Debug, Clone)]
+pub struct NativePrice {
+    pub value: String,
+    pub decimals: u8,
+    pub name: String,
+    pub symbol: String,
+}
+
 #[derive(Deserialize, Debug)]
 pub struct MoralisOhlcvResponse {
     // #[serde(default)]

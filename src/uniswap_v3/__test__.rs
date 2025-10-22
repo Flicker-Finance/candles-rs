@@ -14,6 +14,7 @@ mod test {
         unsafe {
             std::env::set_var("UNISWAP_BATCH_SIZE", "1000");
             std::env::set_var("UNISWAP_MIN_CANDLES", "10");
+            std::env::set_var("UNISWAP_RPC_DELAY_MS", "100");
         }
 
         let instrument = Instrument {
@@ -35,6 +36,7 @@ mod test {
         unsafe {
             std::env::set_var("UNISWAP_BATCH_SIZE", "1000");
             std::env::set_var("UNISWAP_MIN_CANDLES", "10");
+            std::env::set_var("UNISWAP_RPC_DELAY_MS", "100");
         }
 
         let instrument = Instrument {

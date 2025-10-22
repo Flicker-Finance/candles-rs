@@ -57,6 +57,8 @@ impl UniswapV3 {
 
         let batch_size = std::env::var("UNISWAP_BATCH_SIZE").ok().and_then(|s| s.parse::<u64>().ok()).unwrap_or(1000);
 
+        let rpc_delay_ms = std::env::var("UNISWAP_RPC_DELAY_MS").ok().and_then(|s| s.parse::<u64>().ok()).unwrap_or(50);
+
         let max_blocks_to_scan = 200_000;
         let from_block = current_block.saturating_sub(max_blocks_to_scan);
 
@@ -116,7 +118,7 @@ impl UniswapV3 {
                 break;
             }
 
-            sleep(Duration::from_millis(50)).await;
+            sleep(Duration::from_millis(rpc_delay_ms)).await;
         }
 
         if candle_map.is_empty() {

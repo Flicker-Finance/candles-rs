@@ -115,6 +115,10 @@ export UNISWAP_BATCH_SIZE=500
 
 # Optional: Set minimum number of candles required (default: 250)
 export UNISWAP_MIN_CANDLES=300
+
+# Optional: Set delay between RPC calls in milliseconds (default: 50)
+# Increase this if you're hitting rate limits (e.g., 200ms = 5 calls/second)
+export UNISWAP_RPC_DELAY_MS=100
 ```
 
 **Usage**:

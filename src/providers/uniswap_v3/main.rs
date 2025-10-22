@@ -8,8 +8,8 @@ use std::time::Duration;
 use tokio::time::sleep;
 
 use crate::{
-    base::BaseConnection,
     errors::CandlesError,
+    providers::base::BaseConnection,
     types::{Candle, Instrument, Timeframe},
 };
 

@@ -2,8 +2,8 @@ use async_trait::async_trait;
 use serde_json::Value;
 
 use crate::{
-    base::BaseConnection,
     errors::CandlesError,
+    providers::base::BaseConnection,
     types::{Candle, Instrument, MarketType, Timeframe},
     utils::parse_string_to_f64,
 };

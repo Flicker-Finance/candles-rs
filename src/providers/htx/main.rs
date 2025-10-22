@@ -1,9 +1,9 @@
 use async_trait::async_trait;
 
 use crate::{
-    base::BaseConnection,
     errors::CandlesError,
-    htx::types::HtxKlineResponse,
+    providers::base::BaseConnection,
+    providers::htx::types::HtxKlineResponse,
     types::{Candle, Instrument, MarketType, Timeframe},
     utils::DataWrapper,
 };

@@ -2,9 +2,9 @@ use async_trait::async_trait;
 use serde_json::Value;
 
 use crate::{
-    base::BaseConnection,
     errors::CandlesError,
-    mexc::types::MexcKlineFuturesResponse,
+    providers::base::BaseConnection,
+    providers::mexc::types::MexcKlineFuturesResponse,
     types::{Candle, Instrument, MarketType, Timeframe},
     utils::{DataWrapper, parse_string_to_f64},
 };

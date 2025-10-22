@@ -18,6 +18,11 @@ A Rust library for fetching candlestick (OHLCV) data from multiple cryptocurrenc
       - Supports: Ethereum, Polygon, Arbitrum, Optimism, Base, BNB Chain, Celo, Avalanche
       - Aggregates on-chain swap data into OHLCV candles
       - Customizable price inversion for human-readable prices
+  - **Data Aggregators**:
+    - Moralis Web3 Data API
+      - Supports all major EVM chains
+      - Pre-aggregated OHLCV data for DEX pairs
+      - Fast and reliable via Moralis infrastructure
 - **Unified Interface**: Common API across all exchanges
 - **Multiple Timeframes**: Support for 3m, 5m, 15m, 30m, 1h, 4h, 1d, 1w, 1M intervals
 - **Async/Await**: Built with async Rust for efficient data fetching
@@ -140,6 +145,49 @@ let candles = instrument.connection.get_candles(instrument).await?;
 - Use `_inverted` suffix for human-readable prices (e.g., $4,021 vs 0.000249)
 - **Important**: Must be a Uniswap V3 **pool** address, not a router contract
 - Find pool addresses at [Uniswap Info](https://info.uniswap.org)
+
+#### Moralis Web3 Data API
+Fetches pre-aggregated OHLCV data using Moralis Web3 Data API.
+
+**Supported Chains**: All major EVM chains (Ethereum, Base, BNB, Polygon, Arbitrum, Avalanche, etc.)
+
+**Supported Timeframes**: 5m, 15m, 30m, 1h, 4h, 1d
+
+**Configuration**:
+```bash
+# Required: Moralis API Key
+export MORALIS_API_KEY="your-moralis-api-key"
+```
+
+Get your free API key at [Moralis Dashboard](https://admin.moralis.io/)
+
+**Usage**:
+```rust
+use candles_rs::{connections::Connection, types::*};
+
+let instrument = Instrument {
+    asset_id: "ethereum_usdc_weth".to_string(),
+    pair: "eth_0x88e6a0c2ddd26feeb64f039a2c41296fcb3f5640".to_string(),
+    connection: Connection::Moralis,
+    market_type: MarketType::Spot,
+    timeframe: Timeframe::M15,
+};
+
+let candles = instrument.connection.get_candles(instrument).await?;
+```
+
+**Pair Format**: `chain_pairAddress`
+- Example: `eth_0x88e6a0c2ddd26feeb64f039a2c41296fcb3f5640` (USDC/WETH on Ethereum)
+- Example: `base_0xa43fe16908251ee70ef74718545e4fe6c5ccec9f` (USDC/WETH on Base)
+- Chain identifier followed by underscore and pair/pool address
+- Fetches the last 30 days of data with up to 300 candles
+- Prices returned in USD
+
+**Benefits**:
+- Fast API responses (no on-chain calls needed)
+- Reliable infrastructure by Moralis
+- Pre-aggregated data across multiple DEXs
+- Works with any EVM-compatible chain
 
 ## Data Types
 

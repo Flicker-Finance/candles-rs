@@ -1,9 +1,9 @@
 use async_trait::async_trait;
 
 use crate::{
-    base::BaseConnection,
-    bybit::types::BybitKlineResponse,
     errors::CandlesError,
+    providers::base::BaseConnection,
+    providers::bybit::types::BybitKlineResponse,
     types::{Candle, MarketType, Timeframe},
     utils::{ResultWrapper, parse_string_to_f64},
 };

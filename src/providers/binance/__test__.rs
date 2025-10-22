@@ -2,9 +2,9 @@
 mod test {
 
     use crate::{
-        base::BaseConnection,
-        bingx::main::BingX,
         connections::Connection,
+        providers::base::BaseConnection,
+        providers::binance::main::Binance,
         types::{Instrument, MarketType, Timeframe},
         utils::examine_candles,
     };
@@ -13,13 +13,13 @@ mod test {
     async fn test_spot_candles() {
         let instrument = Instrument {
             asset_id: "bitcoin".to_owned(),
-            pair: "BTC-USDT".to_owned(),
-            connection: Connection::BingX,
+            pair: "BTCUSDT".to_owned(),
+            connection: Connection::Binance,
             market_type: MarketType::Spot,
             timeframe: Timeframe::H1,
         };
 
-        match BingX::get_candles(instrument).await {
+        match Binance::get_candles(instrument).await {
             Ok(result) => examine_candles(&result),
             Err(err) => panic!("{}", err),
         }
@@ -29,13 +29,13 @@ mod test {
     async fn test_derivatives_candles() {
         let instrument = Instrument {
             asset_id: "bitcoin".to_owned(),
-            pair: "BTC-USDT".to_owned(),
-            connection: Connection::BingX,
+            pair: "BTCUSDT".to_owned(),
+            connection: Connection::Binance,
             market_type: MarketType::Derivatives,
             timeframe: Timeframe::H1,
         };
 
-        match BingX::get_candles(instrument).await {
+        match Binance::get_candles(instrument).await {
             Ok(result) => examine_candles(&result),
             Err(err) => panic!("{}", err),
         }

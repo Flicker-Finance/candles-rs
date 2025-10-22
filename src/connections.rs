@@ -2,17 +2,18 @@ use serde::{Deserialize, Serialize};
 use strum::{Display, EnumString};
 
 use crate::{
-    base::BaseConnection,
-    binance::main::Binance,
-    bingx::main::BingX,
-    blofin::main::BloFin,
-    bybit::main::Bybit,
     errors::CandlesError,
-    htx::main::HTX,
-    mexc::main::Mexc,
-    okx::main::OKX,
+    providers::base::BaseConnection,
+    providers::binance::main::Binance,
+    providers::bingx::main::BingX,
+    providers::blofin::main::BloFin,
+    providers::bybit::main::Bybit,
+    providers::htx::main::HTX,
+    providers::mexc::main::Mexc,
+    providers::moralis::main::Moralis,
+    providers::okx::main::OKX,
+    providers::uniswap_v3::main::UniswapV3,
     types::{Candle, Instrument},
-    uniswap_v3::main::UniswapV3,
 };
 
 #[derive(Hash, PartialEq, Eq, Debug, Display, EnumString, Serialize, Deserialize, Clone)]
@@ -28,6 +29,7 @@ pub enum Connection {
     Mexc,
 
     UniswapV3,
+    Moralis,
 }
 
 impl Connection {
@@ -41,6 +43,7 @@ impl Connection {
             Connection::HTX => HTX::get_candles(instrument).await,
             Connection::Mexc => Mexc::get_candles(instrument).await,
             Connection::UniswapV3 => UniswapV3::get_candles(instrument).await,
+            Connection::Moralis => Moralis::get_candles(instrument).await,
         }
     }
 }

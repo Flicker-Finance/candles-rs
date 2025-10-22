@@ -2,9 +2,9 @@
 mod test {
 
     use crate::{
-        base::BaseConnection,
-        binance::main::Binance,
         connections::Connection,
+        providers::base::BaseConnection,
+        providers::bybit::main::Bybit,
         types::{Instrument, MarketType, Timeframe},
         utils::examine_candles,
     };
@@ -14,12 +14,12 @@ mod test {
         let instrument = Instrument {
             asset_id: "bitcoin".to_owned(),
             pair: "BTCUSDT".to_owned(),
-            connection: Connection::Binance,
+            connection: Connection::Bybit,
             market_type: MarketType::Spot,
             timeframe: Timeframe::H1,
         };
 
-        match Binance::get_candles(instrument).await {
+        match Bybit::get_candles(instrument).await {
             Ok(result) => examine_candles(&result),
             Err(err) => panic!("{}", err),
         }
@@ -30,12 +30,12 @@ mod test {
         let instrument = Instrument {
             asset_id: "bitcoin".to_owned(),
             pair: "BTCUSDT".to_owned(),
-            connection: Connection::Binance,
+            connection: Connection::Bybit,
             market_type: MarketType::Derivatives,
             timeframe: Timeframe::H1,
         };
 
-        match Binance::get_candles(instrument).await {
+        match Bybit::get_candles(instrument).await {
             Ok(result) => examine_candles(&result),
             Err(err) => panic!("{}", err),
         }

@@ -2,9 +2,9 @@
 mod test {
 
     use crate::{
-        base::BaseConnection,
         connections::Connection,
-        htx::main::HTX,
+        providers::base::BaseConnection,
+        providers::blofin::main::BloFin,
         types::{Instrument, MarketType, Timeframe},
         utils::examine_candles,
     };
@@ -13,13 +13,13 @@ mod test {
     async fn test_spot_candles() {
         let instrument = Instrument {
             asset_id: "bitcoin".to_owned(),
-            pair: "BTCUSDT".to_owned(),
-            connection: Connection::HTX,
+            pair: "BTC-USDT".to_owned(),
+            connection: Connection::BloFin,
             market_type: MarketType::Spot,
             timeframe: Timeframe::H1,
         };
 
-        match HTX::get_candles(instrument).await {
+        match BloFin::get_candles(instrument).await {
             Ok(result) => examine_candles(&result),
             Err(err) => panic!("{}", err),
         }
@@ -30,12 +30,12 @@ mod test {
         let instrument = Instrument {
             asset_id: "bitcoin".to_owned(),
             pair: "BTC-USDT".to_owned(),
-            connection: Connection::HTX,
+            connection: Connection::BloFin,
             market_type: MarketType::Derivatives,
             timeframe: Timeframe::H1,
         };
 
-        match HTX::get_candles(instrument).await {
+        match BloFin::get_candles(instrument).await {
             Ok(result) => examine_candles(&result),
             Err(err) => panic!("{}", err),
         }

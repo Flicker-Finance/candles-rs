@@ -39,21 +39,23 @@ impl BaseConnection for BingX {
         for (index, value) in response.data.iter().enumerate().rev() {
             match instrument.market_type {
                 MarketType::Spot => {
-                    let candle_array = value
-                        .as_array()
-                        .ok_or_else(|| CandlesError::Other(format!("Expected array for candle data at index {index}")))?;
+                    let candle_array = value.as_array().ok_or_else(|| CandlesError::InvalidDataFormat {
+                        index,
+                        message: "Expected array for candle data".to_string(),
+                    })?;
 
                     if candle_array.len() < 6 {
-                        return Err(CandlesError::Other(format!(
-                            "Insufficient data in candle array at index {index}: expected at least 6 elements, got {}",
-                            candle_array.len()
-                        )));
+                        return Err(CandlesError::InvalidDataFormat {
+                            index,
+                            message: format!("Insufficient data in candle array: expected at least 6 elements, got {}", candle_array.len()),
+                        });
                     }
 
                     candles.push(Candle {
-                        timestamp: candle_array[0]
-                            .as_i64()
-                            .ok_or(CandlesError::Other(format!("Failed to parse timestamp at index {} with value {}", index, candle_array[0])))?,
+                        timestamp: candle_array[0].as_i64().ok_or(CandlesError::ParseError {
+                            field: "timestamp".to_string(),
+                            message: format!("at index {} with value {}", index, candle_array[0]),
+                        })?,
                         open: parse_string_to_f64(&candle_array[1], "open price", index)?,
                         high: parse_string_to_f64(&candle_array[2], "high price", index)?,
                         low: parse_string_to_f64(&candle_array[3], "low price", index)?,
@@ -62,45 +64,55 @@ impl BaseConnection for BingX {
                     });
                 }
                 MarketType::Derivatives => {
-                    let candle_object = value
-                        .as_object()
-                        .ok_or_else(|| CandlesError::Other(format!("Expected object for candle data at index {index}")))?;
+                    let candle_object = value.as_object().ok_or_else(|| CandlesError::InvalidDataFormat {
+                        index,
+                        message: "Expected object for candle data".to_string(),
+                    })?;
 
                     if candle_object.keys().len() < 6 {
-                        return Err(CandlesError::Other(format!(
-                            "Insufficient data in candle object at index {index}: expected at least 6 elements, got {}",
-                            candle_object.len()
-                        )));
+                        return Err(CandlesError::InvalidDataFormat {
+                            index,
+                            message: format!("Insufficient data in candle object: expected at least 6 elements, got {}", candle_object.len()),
+                        });
                     }
 
                     candles.push(Candle {
                         timestamp: candle_object
                             .get("time")
-                            .ok_or(CandlesError::Other(format!("Failed to get timestamp for key 'time' at index {index}")))?
+                            .ok_or(CandlesError::MissingField { field: "time".to_string(), index })?
                             .as_i64()
-                            .ok_or(CandlesError::Other(format!("Failed to parse timestamp at index {index}")))?,
+                            .ok_or(CandlesError::ParseError {
+                                field: "timestamp".to_string(),
+                                message: format!("at index {index}"),
+                            })?,
                         open: parse_string_to_f64(
-                            candle_object.get("open").ok_or(CandlesError::Other(format!("Failed to get 'open' at index {index}")))?,
+                            candle_object.get("open").ok_or(CandlesError::MissingField { field: "open".to_string(), index })?,
                             "open price",
                             index,
                         )?,
                         high: parse_string_to_f64(
-                            candle_object.get("high").ok_or(CandlesError::Other(format!("Failed to get 'high' at index {index}")))?,
+                            candle_object.get("high").ok_or(CandlesError::MissingField { field: "high".to_string(), index })?,
                             "high price",
                             index,
                         )?,
                         low: parse_string_to_f64(
-                            candle_object.get("low").ok_or(CandlesError::Other(format!("Failed to get 'low' at index {index}")))?,
+                            candle_object.get("low").ok_or(CandlesError::MissingField { field: "low".to_string(), index })?,
                             "low price",
                             index,
                         )?,
                         close: parse_string_to_f64(
-                            candle_object.get("close").ok_or(CandlesError::Other(format!("Failed to get 'close' at index {index}")))?,
+                            candle_object.get("close").ok_or(CandlesError::MissingField {
+                                field: "close".to_string(),
+                                index,
+                            })?,
                             "close price",
                             index,
                         )?,
                         volume: parse_string_to_f64(
-                            candle_object.get("volume").ok_or(CandlesError::Other(format!("Failed to get 'volume' at index {index}")))?,
+                            candle_object.get("volume").ok_or(CandlesError::MissingField {
+                                field: "volume".to_string(),
+                                index,
+                            })?,
                             "volume",
                             index,
                         )?,

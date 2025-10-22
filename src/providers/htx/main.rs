@@ -14,7 +14,12 @@ pub struct HTX;
 impl BaseConnection for HTX {
     async fn get_candles(instrument: Instrument) -> Result<Vec<Candle>, crate::errors::CandlesError> {
         let htx_timeframe = match instrument.timeframe {
-            Timeframe::M3 => return Err(CandlesError::Other("m3 Timeframe is not available for HTX".to_string())),
+            Timeframe::M3 => {
+                return Err(CandlesError::UnsupportedTimeframe {
+                    timeframe: "3m".to_string(),
+                    provider: "HTX".to_string(),
+                });
+            }
             Timeframe::M5 => "5min",
             Timeframe::M15 => "15min",
             Timeframe::M30 => "30min",

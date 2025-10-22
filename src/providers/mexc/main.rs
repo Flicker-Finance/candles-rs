@@ -17,7 +17,12 @@ impl BaseConnection for Mexc {
         match instrument.market_type {
             MarketType::Spot => {
                 let mexc_timeframe = match instrument.timeframe {
-                    Timeframe::M3 => return Err(CandlesError::Other("m3 Timeframe is not available for Mexc".to_string())),
+                    Timeframe::M3 => {
+                        return Err(CandlesError::UnsupportedTimeframe {
+                            timeframe: "3m".to_string(),
+                            provider: "Mexc".to_string(),
+                        });
+                    }
                     Timeframe::M5 => "5m",
                     Timeframe::M15 => "15m",
                     Timeframe::M30 => "30m",
@@ -35,16 +40,17 @@ impl BaseConnection for Mexc {
 
                 for (index, candle_array) in response.into_iter().enumerate() {
                     if candle_array.len() < 6 {
-                        return Err(CandlesError::Other(format!(
-                            "Insufficient data in candle array at index {index}: expected at least 6 elements, got {}",
-                            candle_array.len()
-                        )));
+                        return Err(CandlesError::InvalidDataFormat {
+                            index,
+                            message: format!("Insufficient data in candle array: expected at least 6 elements, got {}", candle_array.len()),
+                        });
                     }
 
                     candles.push(Candle {
-                        timestamp: candle_array[0]
-                            .as_i64()
-                            .ok_or_else(|| CandlesError::Other(format!("Failed to parse timestamp at index {} with value {}", index, candle_array[0])))?,
+                        timestamp: candle_array[0].as_i64().ok_or_else(|| CandlesError::ParseError {
+                            field: "timestamp".to_string(),
+                            message: format!("at index {} with value {}", index, candle_array[0]),
+                        })?,
                         open: parse_string_to_f64(&candle_array[1], "open price", index)?,
                         high: parse_string_to_f64(&candle_array[2], "high price", index)?,
                         low: parse_string_to_f64(&candle_array[3], "low price", index)?,
@@ -58,7 +64,12 @@ impl BaseConnection for Mexc {
 
             MarketType::Derivatives => {
                 let mexc_timeframe = match instrument.timeframe {
-                    Timeframe::M3 => return Err(CandlesError::Other("m3 Timeframe is not available for Mexc".to_string())),
+                    Timeframe::M3 => {
+                        return Err(CandlesError::UnsupportedTimeframe {
+                            timeframe: "3m".to_string(),
+                            provider: "Mexc".to_string(),
+                        });
+                    }
                     Timeframe::M5 => "Min5",
                     Timeframe::M15 => "Min15",
                     Timeframe::M30 => "Min30",

@@ -7,13 +7,15 @@ use std::collections::BTreeMap;
 use std::time::Duration;
 use tokio::time::sleep;
 
+use crate::modules::chains::Chain;
+use crate::modules::pairs::parse_pair;
 use crate::{
     errors::CandlesError,
     providers::base::BaseConnection,
     types::{Candle, Instrument, Timeframe},
 };
 
-use super::types::{Chain, ProcessedSwap};
+use super::types::ProcessedSwap;
 
 pub struct UniswapV3;
 
@@ -22,33 +24,17 @@ fn swap_event_signature() -> B256 {
 }
 
 impl UniswapV3 {
-    fn parse_pair(pair: &str) -> Result<(Chain, String, bool), CandlesError> {
-        let parts: Vec<&str> = pair.split('_').collect();
-        if parts.len() < 2 {
-            return Err(CandlesError::Other(format!(
-                "Invalid pair format. Expected 'chain_poolAddress' or 'chain_poolAddress_inverted', got: {pair}"
-            )));
-        }
-
-        let chain = Chain::from_str(parts[0]).ok_or_else(|| CandlesError::Other(format!("Unsupported chain: {}", parts[0])))?;
-
-        let pool_address = parts[1].to_lowercase();
-        let invert_price = parts.iter().skip(2).any(|&s| s == "inverted");
-
-        Ok((chain, pool_address, invert_price))
-    }
-
     async fn fetch_and_aggregate_swaps(chain: Chain, pool_address: &str, timeframe: &Timeframe, invert_price: bool, limit: usize) -> Result<Vec<Candle>, CandlesError> {
         let rpc_url = std::env::var("RPC_URL").unwrap_or_else(|_| chain.get_rpc_url());
 
-        let provider = ProviderBuilder::new().on_http(rpc_url.parse().map_err(|e| CandlesError::Other(format!("Invalid RPC URL: {e}")))?);
+        let provider = ProviderBuilder::new().on_http(rpc_url.parse().map_err(|e| CandlesError::RpcError(format!("Invalid RPC URL: {e}")))?);
 
         let current_block = provider
             .get_block_number()
             .await
-            .map_err(|e| CandlesError::Other(format!("Failed to get block number: {e}")))?;
+            .map_err(|e| CandlesError::RpcError(format!("Failed to get block number: {e}")))?;
 
-        let pool_addr: Address = pool_address.parse().map_err(|e| CandlesError::Other(format!("Invalid pool address: {e}")))?;
+        let pool_addr: Address = pool_address.parse().map_err(|_| CandlesError::InvalidAddress(pool_address.to_string()))?;
 
         // Fetch token addresses and decimals
         let (token0, token1) = Self::get_pool_tokens(&provider, pool_addr).await?;
@@ -77,7 +63,7 @@ impl UniswapV3 {
             let batch_logs = provider
                 .get_logs(&filter)
                 .await
-                .map_err(|e| CandlesError::Other(format!("Failed to fetch logs for blocks {current_from}-{batch_to}: {e}")))?;
+                .map_err(|e| CandlesError::RpcError(format!("Failed to fetch logs for blocks {current_from}-{batch_to}: {e}")))?;
 
             for log in batch_logs {
                 let (timestamp, amount0, amount1) = match Self::decode_swap_log(&log) {
@@ -122,7 +108,7 @@ impl UniswapV3 {
         }
 
         if candle_map.is_empty() {
-            return Err(CandlesError::Other(format!(
+            return Err(CandlesError::InvalidBlockchainData(format!(
                 "No swaps found for pool: {pool_address} on chain: {chain}. \
                 Make sure this is a Uniswap V3 pool address (not a router). \
                 Find pool addresses at https://info.uniswap.org"
@@ -155,7 +141,7 @@ impl UniswapV3 {
         }
 
         if candles.len() < limit {
-            return Err(CandlesError::Other(format!(
+            return Err(CandlesError::InvalidBlockchainData(format!(
                 "Only found {} candles, minimum required is {}. Pool may not have enough activity.",
                 candles.len(),
                 limit
@@ -167,23 +153,34 @@ impl UniswapV3 {
 
     fn decode_swap_log(log: &Log) -> Result<(i64, I256, I256), CandlesError> {
         if log.topics().is_empty() || log.data().data.len() < 128 {
-            return Err(CandlesError::Other("Invalid log format".to_string()));
+            return Err(CandlesError::InvalidBlockchainData("Invalid log format".to_string()));
         }
 
-        let timestamp = log.block_timestamp.ok_or_else(|| CandlesError::Other("Missing block timestamp".to_string()))? as i64 * 1000;
+        let timestamp = log
+            .block_timestamp
+            .ok_or_else(|| CandlesError::InvalidBlockchainData("Missing block timestamp".to_string()))? as i64
+            * 1000;
 
         let data = &log.data().data;
 
-        let amount0_in_bytes: [u8; 32] = data[0..32].try_into().map_err(|_| CandlesError::Other("Failed to parse amount0In".to_string()))?;
+        let amount0_in_bytes: [u8; 32] = data[0..32]
+            .try_into()
+            .map_err(|_| CandlesError::InvalidBlockchainData("Failed to parse amount0In".to_string()))?;
         let amount0_in = U256::from_be_bytes(amount0_in_bytes);
 
-        let amount1_in_bytes: [u8; 32] = data[32..64].try_into().map_err(|_| CandlesError::Other("Failed to parse amount1In".to_string()))?;
+        let amount1_in_bytes: [u8; 32] = data[32..64]
+            .try_into()
+            .map_err(|_| CandlesError::InvalidBlockchainData("Failed to parse amount1In".to_string()))?;
         let amount1_in = U256::from_be_bytes(amount1_in_bytes);
 
-        let amount0_out_bytes: [u8; 32] = data[64..96].try_into().map_err(|_| CandlesError::Other("Failed to parse amount0Out".to_string()))?;
+        let amount0_out_bytes: [u8; 32] = data[64..96]
+            .try_into()
+            .map_err(|_| CandlesError::InvalidBlockchainData("Failed to parse amount0Out".to_string()))?;
         let amount0_out = U256::from_be_bytes(amount0_out_bytes);
 
-        let amount1_out_bytes: [u8; 32] = data[96..128].try_into().map_err(|_| CandlesError::Other("Failed to parse amount1Out".to_string()))?;
+        let amount1_out_bytes: [u8; 32] = data[96..128]
+            .try_into()
+            .map_err(|_| CandlesError::InvalidBlockchainData("Failed to parse amount1Out".to_string()))?;
         let amount1_out = U256::from_be_bytes(amount1_out_bytes);
 
         let amount0 = if amount0_out > amount0_in {
@@ -208,10 +205,10 @@ impl UniswapV3 {
 
         let tx = alloy::rpc::types::TransactionRequest::default().to(token_address).input(calldata.into());
 
-        let result = provider.call(&tx).await.map_err(|e| CandlesError::Other(format!("Failed to call decimals(): {e}")))?;
+        let result = provider.call(&tx).await.map_err(|e| CandlesError::RpcError(format!("Failed to call decimals(): {e}")))?;
 
         if result.len() < 32 {
-            return Err(CandlesError::Other("Invalid decimals response".to_string()));
+            return Err(CandlesError::InvalidBlockchainData("Invalid decimals response".to_string()));
         }
 
         // decimals returns uint8, but it's padded to 32 bytes
@@ -230,12 +227,12 @@ impl UniswapV3 {
 
         let tx1 = alloy::rpc::types::TransactionRequest::default().to(pool_address).input(token1_calldata.into());
 
-        let result0 = provider.call(&tx0).await.map_err(|e| CandlesError::Other(format!("Failed to call token0(): {e}")))?;
+        let result0 = provider.call(&tx0).await.map_err(|e| CandlesError::RpcError(format!("Failed to call token0(): {e}")))?;
 
-        let result1 = provider.call(&tx1).await.map_err(|e| CandlesError::Other(format!("Failed to call token1(): {e}")))?;
+        let result1 = provider.call(&tx1).await.map_err(|e| CandlesError::RpcError(format!("Failed to call token1(): {e}")))?;
 
         if result0.len() < 32 || result1.len() < 32 {
-            return Err(CandlesError::Other("Invalid token address response".to_string()));
+            return Err(CandlesError::InvalidBlockchainData("Invalid token address response".to_string()));
         }
 
         // Addresses are returned as 32 bytes with 12 bytes of padding
@@ -263,7 +260,7 @@ impl UniswapV3 {
 #[async_trait]
 impl BaseConnection for UniswapV3 {
     async fn get_candles(instrument: Instrument) -> Result<Vec<Candle>, CandlesError> {
-        let (chain, pool_address, invert_price) = Self::parse_pair(&instrument.pair)?;
+        let (chain, pool_address, invert_price) = parse_pair(&instrument.pair)?;
 
         let min_candles = std::env::var("UNISWAP_MIN_CANDLES").ok().and_then(|s| s.parse::<usize>().ok()).unwrap_or(250);
 

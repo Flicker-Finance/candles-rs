@@ -49,3 +49,9 @@ pub mod moralis {
     pub mod main;
     pub mod types;
 }
+
+pub mod coingecko {
+    mod __test__;
+    pub mod main;
+    pub mod types;
+}

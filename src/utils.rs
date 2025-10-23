@@ -66,6 +66,7 @@ pub fn examine_candles(candles: &[Candle]) {
 
     // Pick the last candle and do ordinary checks
     let candle = candles.last().unwrap();
+    println!("candle {candle:?}");
 
     // Check timestamp is valid milliseconds by attempting to parse
     assert!(

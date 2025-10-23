@@ -8,6 +8,7 @@ use crate::{
     providers::bingx::main::BingX,
     providers::blofin::main::BloFin,
     providers::bybit::main::Bybit,
+    providers::coingecko::main::CoinGecko,
     providers::htx::main::HTX,
     providers::mexc::main::Mexc,
     providers::moralis::main::Moralis,
@@ -30,6 +31,7 @@ pub enum Connection {
 
     UniswapV3,
     Moralis,
+    CoinGecko,
 }
 
 impl Connection {
@@ -44,6 +46,7 @@ impl Connection {
             Connection::Mexc => Mexc::get_candles(instrument).await,
             Connection::UniswapV3 => UniswapV3::get_candles(instrument).await,
             Connection::Moralis => Moralis::get_candles(instrument).await,
+            Connection::CoinGecko => CoinGecko::get_candles(instrument).await,
         }
     }
 }

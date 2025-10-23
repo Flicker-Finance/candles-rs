@@ -11,7 +11,6 @@ use crate::{
     providers::coingecko::main::CoinGecko,
     providers::htx::main::HTX,
     providers::mexc::main::Mexc,
-    providers::moralis::main::Moralis,
     providers::okx::main::OKX,
     providers::uniswap_v3::main::UniswapV3,
     types::{Candle, Instrument},
@@ -30,7 +29,6 @@ pub enum Connection {
     Mexc,
 
     UniswapV3,
-    Moralis,
     CoinGecko,
 }
 
@@ -45,7 +43,6 @@ impl Connection {
             Connection::HTX => HTX::get_candles(instrument).await,
             Connection::Mexc => Mexc::get_candles(instrument).await,
             Connection::UniswapV3 => UniswapV3::get_candles(instrument).await,
-            Connection::Moralis => Moralis::get_candles(instrument).await,
             Connection::CoinGecko => CoinGecko::get_candles(instrument).await,
         }
     }

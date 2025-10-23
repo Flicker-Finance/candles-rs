@@ -2,8 +2,8 @@ use async_trait::async_trait;
 
 use crate::{
     errors::CandlesError,
-    providers::base::BaseConnection,
-    providers::coingecko::types::OhlcvResponse,
+    modules::{chains::Chain, pairs::Pool},
+    providers::{base::BaseConnection, coingecko::types::OhlcvResponse},
     types::{Candle, Instrument, Timeframe},
     utils::parse_string_to_f64,
 };
@@ -13,16 +13,13 @@ pub struct CoinGecko;
 #[async_trait]
 impl BaseConnection for CoinGecko {
     async fn get_candles(instrument: Instrument) -> Result<Vec<Candle>, CandlesError> {
-        let parts: Vec<&str> = instrument.pair.split('_').collect();
-        if parts.len() != 2 {
-            return Err(CandlesError::InvalidPairFormat(format!(
-                "Expected format: <network>_<pool_address>, got: {}",
-                instrument.pair
-            )));
-        }
+        let pool = Pool::try_from(instrument.pair)?;
 
-        let network = parts[0];
-        let pool_address = parts[1];
+        let network = match pool.chain {
+            Chain::Ethereum => "eth",
+            Chain::Base => "base",
+            Chain::Bnb => "bsc",
+        };
 
         let timeframe = match instrument.timeframe.clone() {
             Timeframe::M3 => "minute",
@@ -35,7 +32,7 @@ impl BaseConnection for CoinGecko {
             Timeframe::W1 => "day",
             Timeframe::MN1 => "day",
         };
-        let url = format!("https://api.geckoterminal.com/api/v2/networks/{network}/pools/{pool_address}/ohlcv/{timeframe}");
+        let url = format!("https://api.geckoterminal.com/api/v2/networks/{network}/pools/{}/ohlcv/{timeframe}", pool.pool_address);
 
         let client = reqwest::Client::new();
         let response = client

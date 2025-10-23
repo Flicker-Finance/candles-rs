@@ -26,8 +26,8 @@ pub enum CandlesError {
     #[error("Invalid address format: {0}")]
     InvalidAddress(String),
 
-    #[error("Invalid pair format: {0}")]
-    InvalidPairFormat(String),
+    #[error("Invalid pool format: {0}")]
+    InvalidPoolFormat(String),
 
     #[error("Unsupported timeframe '{timeframe}' for provider '{provider}'")]
     UnsupportedTimeframe { timeframe: String, provider: String },

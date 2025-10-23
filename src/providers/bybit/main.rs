@@ -31,8 +31,11 @@ impl BaseConnection for Bybit {
         };
 
         let url = format!(
-            "https://api.bybit.com/v5/market/kline?category={}&symbol={}&interval={}",
-            category, instrument.pair, bybit_timeframe
+            "https://api.bybit.com/v5/market/kline?category={}&symbol={}&interval={}&limit={}",
+            category,
+            instrument.pair,
+            bybit_timeframe,
+            instrument.limit.unwrap_or(1000)
         );
 
         let response: ResultWrapper<BybitKlineResponse> = reqwest::get(&url).await?.json().await?;

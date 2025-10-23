@@ -15,12 +15,13 @@ mod test {
             asset_id: "bitcoin".to_owned(),
             pair: "BTC-USDT".to_owned(),
             connection: Connection::OKX,
+            limit: None,
             market_type: MarketType::Spot,
             timeframe: Timeframe::H1,
         };
 
-        match OKX::get_candles(instrument).await {
-            Ok(result) => examine_candles(&result),
+        match OKX::get_candles(instrument.clone()).await {
+            Ok(result) => examine_candles(&result, instrument),
             Err(err) => panic!("{}", err),
         }
     }
@@ -31,12 +32,13 @@ mod test {
             asset_id: "bitcoin".to_owned(),
             pair: "BTC-USDT".to_owned(),
             connection: Connection::OKX,
+            limit: None,
             market_type: MarketType::Derivatives,
             timeframe: Timeframe::H1,
         };
 
-        match OKX::get_candles(instrument).await {
-            Ok(result) => examine_candles(&result),
+        match OKX::get_candles(instrument.clone()).await {
+            Ok(result) => examine_candles(&result, instrument),
             Err(err) => panic!("{}", err),
         }
     }

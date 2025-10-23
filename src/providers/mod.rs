@@ -44,12 +44,6 @@ pub mod uniswap_v3 {
     mod types;
 }
 
-pub mod moralis {
-    mod __test__;
-    pub mod main;
-    pub mod types;
-}
-
 pub mod coingecko {
     mod __test__;
     pub mod main;

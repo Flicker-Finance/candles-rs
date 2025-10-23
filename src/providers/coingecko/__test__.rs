@@ -13,14 +13,15 @@ mod test {
     async fn test_coingecko_ethereum_pool_15m() {
         let instrument = Instrument {
             asset_id: "ethereum_usdc_weth".to_owned(),
-            pair: "eth_0x88e6a0c2ddd26feeb64f039a2c41296fcb3f5640".to_owned(),
+            pair: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2_eth_0x88e6a0c2ddd26feeb64f039a2c41296fcb3f5640".to_owned(),
             connection: Connection::CoinGecko,
             market_type: MarketType::Spot,
+            limit: None,
             timeframe: Timeframe::M15,
         };
 
-        match CoinGecko::get_candles(instrument).await {
-            Ok(result) => examine_candles(&result),
+        match CoinGecko::get_candles(instrument.clone()).await {
+            Ok(result) => examine_candles(&result, instrument),
             Err(err) => panic!("Failed to fetch candles: {err}"),
         }
     }
@@ -29,14 +30,15 @@ mod test {
     async fn test_coingecko_base_pool_1h() {
         let instrument = Instrument {
             asset_id: "base_test_pool".to_owned(),
-            pair: "base_0xE1BeD6AAdBa5471700f16A47EEe2504346B724aD".to_owned(),
+            limit: None,
+            pair: "0x3054e8f8fba3055a42e5f5228a2a4e2ab1326933_base_0xE1BeD6AAdBa5471700f16A47EEe2504346B724aD".to_owned(),
             connection: Connection::CoinGecko,
             market_type: MarketType::Spot,
             timeframe: Timeframe::H1,
         };
 
-        match CoinGecko::get_candles(instrument).await {
-            Ok(result) => examine_candles(&result),
+        match CoinGecko::get_candles(instrument.clone()).await {
+            Ok(result) => examine_candles(&result, instrument),
             Err(err) => panic!("Failed to fetch candles: {err}"),
         }
     }
@@ -47,6 +49,7 @@ mod test {
             asset_id: "test".to_owned(),
             pair: "invalid_format_missing_underscore".to_owned(),
             connection: Connection::CoinGecko,
+            limit: None,
             market_type: MarketType::Spot,
             timeframe: Timeframe::H1,
         };
@@ -56,8 +59,8 @@ mod test {
         match result {
             Ok(_) => panic!("Expected error for invalid pair format"),
             Err(err) => match err {
-                CandlesError::InvalidPairFormat(_) => {}
-                _ => panic!("Expected InvalidPairFormat error, got: {:?}", err),
+                CandlesError::InvalidAddress(_) => {}
+                _ => panic!("Expected InvalidPairFormat error, got: {err:?}"),
             },
         }
     }
@@ -68,6 +71,7 @@ mod test {
             asset_id: "test".to_owned(),
             pair: "nounderscore".to_owned(),
             connection: Connection::CoinGecko,
+            limit: None,
             market_type: MarketType::Spot,
             timeframe: Timeframe::H1,
         };
@@ -75,6 +79,6 @@ mod test {
         let result = CoinGecko::get_candles(instrument).await;
 
         assert!(result.is_err());
-        assert!(matches!(result, Err(CandlesError::InvalidPairFormat(_))));
+        assert!(matches!(result, Err(CandlesError::InvalidPoolFormat(_))));
     }
 }

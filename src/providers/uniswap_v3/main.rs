@@ -8,7 +8,7 @@ use std::time::Duration;
 use tokio::time::sleep;
 
 use crate::modules::chains::Chain;
-use crate::modules::pairs::parse_pair;
+use crate::modules::pairs::Pool;
 use crate::{
     errors::CandlesError,
     providers::base::BaseConnection,
@@ -260,11 +260,11 @@ impl UniswapV3 {
 #[async_trait]
 impl BaseConnection for UniswapV3 {
     async fn get_candles(instrument: Instrument) -> Result<Vec<Candle>, CandlesError> {
-        let (chain, pool_address, invert_price) = parse_pair(&instrument.pair)?;
+        let pool = Pool::try_from(instrument.pair)?;
 
         let min_candles = std::env::var("UNISWAP_MIN_CANDLES").ok().and_then(|s| s.parse::<usize>().ok()).unwrap_or(250);
 
-        let candles = Self::fetch_and_aggregate_swaps(chain, &pool_address, &instrument.timeframe, invert_price, min_candles).await?;
+        let candles = Self::fetch_and_aggregate_swaps(pool.chain, &pool.pool_address.to_string(), &instrument.timeframe, pool.inverted, min_candles).await?;
 
         Ok(candles)
     }

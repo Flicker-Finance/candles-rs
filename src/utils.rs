@@ -1,3 +1,4 @@
+use crate::types::Instrument;
 use crate::{errors::CandlesError, types::Candle};
 use chrono::Utc;
 use chrono::{DateTime, Datelike, Duration};
@@ -48,9 +49,9 @@ pub fn parse_string_to_f64(val: &Value, field: &str, index: usize) -> Result<f64
     }
 }
 
-pub fn examine_candles(candles: &[Candle]) {
+pub fn examine_candles(candles: &[Candle], instrument: Instrument) {
     assert!(!candles.is_empty(), "Candles array is empty");
-    assert!(candles.len() >= 5, "Candles length is < 5");
+    assert!(candles.len() >= instrument.limit.unwrap_or(200) as usize, "Candles length is <= 500");
 
     // Check all candles are in ascending order (oldest to newest)
     for i in 1..candles.len() {

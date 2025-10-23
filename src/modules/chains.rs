@@ -23,12 +23,4 @@ impl Chain {
         let env_key = format!("{}_RPC_URL", self.to_string().to_uppercase());
         std::env::var(&env_key).unwrap_or_else(|_| default_url.to_string())
     }
-
-    pub fn as_str_moralis(&self) -> &str {
-        match self {
-            Chain::Ethereum => "eth",
-            Chain::Base => "base",
-            Chain::Bnb => "bsc",
-        }
-    }
 }

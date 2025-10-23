@@ -17,10 +17,11 @@ mod test {
             connection: Connection::BloFin,
             market_type: MarketType::Spot,
             timeframe: Timeframe::H1,
+            limit: None,
         };
 
-        match BloFin::get_candles(instrument).await {
-            Ok(result) => examine_candles(&result),
+        match BloFin::get_candles(instrument.clone()).await {
+            Ok(result) => examine_candles(&result, instrument),
             Err(err) => panic!("{}", err),
         }
     }
@@ -32,11 +33,12 @@ mod test {
             pair: "BTC-USDT".to_owned(),
             connection: Connection::BloFin,
             market_type: MarketType::Derivatives,
+            limit: None,
             timeframe: Timeframe::H1,
         };
 
-        match BloFin::get_candles(instrument).await {
-            Ok(result) => examine_candles(&result),
+        match BloFin::get_candles(instrument.clone()).await {
+            Ok(result) => examine_candles(&result, instrument),
             Err(err) => panic!("{}", err),
         }
     }

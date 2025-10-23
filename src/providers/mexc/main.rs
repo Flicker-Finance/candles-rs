@@ -33,7 +33,12 @@ impl BaseConnection for Mexc {
                     Timeframe::MN1 => "1M",
                 };
 
-                let url = format!("https://api.mexc.com/api/v3/klines?symbol={}&interval={}", instrument.pair, mexc_timeframe);
+                let url = format!(
+                    "https://api.mexc.com/api/v3/klines?symbol={}&interval={}&limit={}",
+                    instrument.pair,
+                    mexc_timeframe,
+                    instrument.limit.unwrap_or(1000)
+                );
 
                 let response: Vec<Vec<Value>> = reqwest::get(&url).await?.json().await?;
                 let mut candles = Vec::with_capacity(response.len());

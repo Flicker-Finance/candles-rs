@@ -14,13 +14,14 @@ mod test {
         let instrument = Instrument {
             asset_id: "bitcoin".to_owned(),
             pair: "BTCUSDT".to_owned(),
+            limit: None,
             connection: Connection::HTX,
             market_type: MarketType::Spot,
             timeframe: Timeframe::H1,
         };
 
-        match HTX::get_candles(instrument).await {
-            Ok(result) => examine_candles(&result),
+        match HTX::get_candles(instrument.clone()).await {
+            Ok(result) => examine_candles(&result, instrument),
             Err(err) => panic!("{}", err),
         }
     }
@@ -30,13 +31,14 @@ mod test {
         let instrument = Instrument {
             asset_id: "bitcoin".to_owned(),
             pair: "BTC-USDT".to_owned(),
+            limit: None,
             connection: Connection::HTX,
             market_type: MarketType::Derivatives,
             timeframe: Timeframe::H1,
         };
 
-        match HTX::get_candles(instrument).await {
-            Ok(result) => examine_candles(&result),
+        match HTX::get_candles(instrument.clone()).await {
+            Ok(result) => examine_candles(&result, instrument),
             Err(err) => panic!("{}", err),
         }
     }

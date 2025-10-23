@@ -31,6 +31,7 @@ pub enum Timeframe {
 pub struct Instrument {
     pub asset_id: String,
     pub pair: String,
+    pub limit: Option<u64>,
     pub connection: Connection,
     pub market_type: MarketType,
     pub timeframe: Timeframe,

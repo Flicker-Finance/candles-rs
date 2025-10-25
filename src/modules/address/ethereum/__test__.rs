@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
     use crate::modules::{
-        address::main::{get_token_info, is_valid_address, parse_address},
+        address::ethereum::main::{get_token_info, is_valid_address},
         chains::Chain,
     };
 
@@ -33,15 +33,6 @@ mod tests {
 
         // Too long
         assert!(!is_valid_address("0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAedAA"));
-    }
-
-    #[test]
-    fn test_parse_address() {
-        let valid = "0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed";
-        assert!(parse_address(valid).is_some());
-
-        let invalid = "0x123";
-        assert!(parse_address(invalid).is_none());
     }
 
     // Integration tests require RPC access

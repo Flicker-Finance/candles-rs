@@ -19,6 +19,7 @@ impl BaseConnection for CoinGecko {
             Chain::Ethereum => "eth",
             Chain::Base => "base",
             Chain::Bnb => "bsc",
+            Chain::Solana => "solana",
         };
 
         let timeframe = match instrument.timeframe.clone() {

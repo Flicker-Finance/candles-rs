@@ -1,7 +1,8 @@
-use crate::modules::address::{ethereum, solana};
+use solana_sdk::pubkey::Pubkey;
+use std::str::FromStr;
 
 pub fn parse_address(addr: &str) -> Option<String> {
-    ethereum::main::parse_address(addr).or_else(|| solana::main::parse_address(addr))
+    Pubkey::from_str(addr).map(|f| f.to_string()).ok()
 }
 
 pub fn is_valid_address(addr: &str) -> bool {

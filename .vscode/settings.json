@@ -7,6 +7,7 @@
         "keccak",
         "ohlcv",
         "Onik",
+        "outputsize",
         "reqwest",
         "Sahakyan",
         "serde",

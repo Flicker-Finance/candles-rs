@@ -65,11 +65,18 @@ impl BaseConnection for CoinGecko {
                 });
             }
 
+            let timestamp = ohlcv_array[0].as_i64().ok_or(CandlesError::ParseError {
+                field: "timestamp".to_string(),
+                message: format!("at index {index}"),
+            })? * 1000;
+
+            // Skip duplicate timestamps
+            if candles.last().is_some_and(|last: &Candle| last.timestamp == timestamp) {
+                continue;
+            }
+
             candles.push(Candle {
-                timestamp: ohlcv_array[0].as_i64().ok_or(CandlesError::ParseError {
-                    field: "timestamp".to_string(),
-                    message: format!("at index {index}"),
-                })? * 1000,
+                timestamp,
                 open: parse_string_to_f64(&ohlcv_array[1], "open price", index)?,
                 high: parse_string_to_f64(&ohlcv_array[2], "high price", index)?,
                 low: parse_string_to_f64(&ohlcv_array[3], "low price", index)?,

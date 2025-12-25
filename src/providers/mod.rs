@@ -1,5 +1,7 @@
 pub mod base;
 
+// Crypto
+
 pub mod binance {
     mod __test__;
     pub mod main;
@@ -48,4 +50,12 @@ pub mod coingecko {
     mod __test__;
     pub mod main;
     pub mod types;
+}
+
+// Stocks
+
+pub mod alpha_vantage {
+    mod __test__;
+    pub mod main;
+    mod utils;
 }

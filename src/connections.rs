@@ -3,6 +3,7 @@ use strum::{Display, EnumString};
 
 use crate::{
     errors::CandlesError,
+    providers::alpha_vantage::main::AlphaVantage,
     providers::base::BaseConnection,
     providers::binance::main::Binance,
     providers::bingx::main::BingX,
@@ -30,6 +31,8 @@ pub enum Connection {
 
     UniswapV3,
     CoinGecko,
+
+    AlphaVantage,
 }
 
 impl Connection {
@@ -44,6 +47,7 @@ impl Connection {
             Connection::Mexc => Mexc::get_candles(instrument).await,
             Connection::UniswapV3 => UniswapV3::get_candles(instrument).await,
             Connection::CoinGecko => CoinGecko::get_candles(instrument).await,
+            Connection::AlphaVantage => AlphaVantage::get_candles(instrument).await,
         }
     }
 }

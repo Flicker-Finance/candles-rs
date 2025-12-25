@@ -1,15 +1,15 @@
 [package]
 name = "candles-rs"
-version = "0.1.4"
+version = "0.1.7"
 edition = "2024"
 license = "MIT"
 authors = ["Onik Sahakyan <os@flicker.finance|onik.sahakyan.09@gmail.com>"]
-description = "A Rust library for fetching candlestick (OHLCV) data from multiple cryptocurrency exchanges including Binance, OKX, Bybit, BloFin, and BingX."
+description = "A Rust library for fetching candlestick (OHLCV) data from multiple cryptocurrency exchanges (Binance, OKX, Bybit, BloFin, BingX, HTX, MEXC) and decentralized exchanges (Uniswap V3 via RPC)."
 repository = "https://github.com/Flicker-Finance/candles-rs"
 documentation = "https://docs.rs/candles-rs"
 readme = "README.md"
-keywords = ["cryptocurrency", "trading", "candles", "ohlcv", "exchanges"]
-categories = ["finance", "mathematics"]
+keywords = ["cryptocurrency", "trading", "candles", "ohlcv", "defi"]
+categories = ["finance", "api-bindings"]
 exclude = ["tests/*", "examples/*", ".github/*"]
 rust-version = "1.85.0"
 
@@ -21,6 +21,13 @@ serde = { version = "1.0.227", features = ["derive"] }
 serde_json = "1.0.145"
 strum = { version = "0.27.2", features = ["derive"] }
 thiserror = "2.0.16"
+alloy = { version = "0.8", features = [
+    "provider-http",
+    "rpc-types-eth",
+    "contract",
+] }
+tokio = { version = "1.47.1", features = ["time", "rt", "macros"] }
+solana-sdk = "3.0.0"
 
 [dev-dependencies]
-tokio = { version = "1.47.1", features = ["rt", "macros"] }
+dotenvy = "0.15"

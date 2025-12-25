@@ -2,15 +2,18 @@ use serde::{Deserialize, Serialize};
 use strum::{Display, EnumString};
 
 use crate::{
-    base::BaseConnection,
-    binance::main::Binance,
-    bingx::main::BingX,
-    blofin::main::BloFin,
-    bybit::main::Bybit,
     errors::CandlesError,
-    htx::main::HTX,
-    mexc::main::Mexc,
-    okx::main::OKX,
+    providers::alpha_vantage::main::AlphaVantage,
+    providers::base::BaseConnection,
+    providers::binance::main::Binance,
+    providers::bingx::main::BingX,
+    providers::blofin::main::BloFin,
+    providers::bybit::main::Bybit,
+    providers::coingecko::main::CoinGecko,
+    providers::htx::main::HTX,
+    providers::mexc::main::Mexc,
+    providers::okx::main::OKX,
+    providers::uniswap_v3::main::UniswapV3,
     types::{Candle, Instrument},
 };
 
@@ -25,6 +28,11 @@ pub enum Connection {
     BingX,
     HTX,
     Mexc,
+
+    UniswapV3,
+    CoinGecko,
+
+    AlphaVantage,
 }
 
 impl Connection {
@@ -37,6 +45,9 @@ impl Connection {
             Connection::BingX => BingX::get_candles(instrument).await,
             Connection::HTX => HTX::get_candles(instrument).await,
             Connection::Mexc => Mexc::get_candles(instrument).await,
+            Connection::UniswapV3 => UniswapV3::get_candles(instrument).await,
+            Connection::CoinGecko => CoinGecko::get_candles(instrument).await,
+            Connection::AlphaVantage => AlphaVantage::get_candles(instrument).await,
         }
     }
 }

@@ -31,6 +31,7 @@ pub enum Timeframe {
 pub struct Instrument {
     pub asset_id: String,
     pub pair: String,
+    pub limit: Option<u64>,
     pub connection: Connection,
     pub market_type: MarketType,
     pub timeframe: Timeframe,
@@ -38,7 +39,7 @@ pub struct Instrument {
 
 #[derive(Debug, Serialize, Clone)]
 pub struct Candle {
-    pub timestamp: i64,
+    pub timestamp: i64, // Timestamp in milliseconds
     pub open: f64,
     pub high: f64,
     pub low: f64,

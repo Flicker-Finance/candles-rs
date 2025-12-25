@@ -1,5 +1,7 @@
+use crate::types::Instrument;
 use crate::{errors::CandlesError, types::Candle};
-use chrono::{DateTime, Duration};
+use chrono::Utc;
+use chrono::{DateTime, Datelike, Duration};
 use serde::Deserialize;
 use serde_json::Value;
 
@@ -30,21 +32,26 @@ pub struct DataWrapperWithStatusCode<C, T> {
 pub fn parse_string_to_f64(val: &Value, field: &str, index: usize) -> Result<f64, CandlesError> {
     match val {
         // Handle string values like "4524.78"
-        Value::String(s) => s.parse().map_err(|_| CandlesError::Other(format!("Failed to parse {field} at index {index}: {val}"))),
+        Value::String(s) => s.parse().map_err(|_| CandlesError::ParseError {
+            field: field.to_string(),
+            message: format!("at index {index}: {val}"),
+        }),
         // Handle number values like 4524.78
-        Value::Number(n) => n
-            .as_f64()
-            .ok_or_else(|| CandlesError::Other(format!("Failed to convert {field} to f64 at index {index}: {val}"))),
+        Value::Number(n) => n.as_f64().ok_or_else(|| CandlesError::ParseError {
+            field: format!("{field} to f64"),
+            message: format!("at index {index}: {val}"),
+        }),
         // Handle any other type
-        _ => Err(CandlesError::Other(format!("Invalid {field} type at index {index}: expected string or number, got {val}"))),
+        _ => Err(CandlesError::InvalidDataFormat {
+            index,
+            message: format!("Invalid {field} type: expected string or number, got {val}"),
+        }),
     }
 }
 
-pub fn examine_candles(candles: &[Candle]) {
-    use chrono::Utc;
-
+pub fn examine_candles(candles: &[Candle], instrument: Instrument) {
     assert!(!candles.is_empty(), "Candles array is empty");
-    assert!(candles.len() >= 5, "Candles length is < 5");
+    assert!(candles.len() >= instrument.limit.unwrap_or(200) as usize, "Candles length is <= 500");
 
     // Check all candles are in ascending order (oldest to newest)
     for i in 1..candles.len() {
@@ -60,6 +67,7 @@ pub fn examine_candles(candles: &[Candle]) {
 
     // Pick the last candle and do ordinary checks
     let candle = candles.last().unwrap();
+    println!("candle {candle:?}");
 
     // Check timestamp is valid milliseconds by attempting to parse
     assert!(
@@ -77,6 +85,14 @@ pub fn examine_candles(candles: &[Candle]) {
         candle_time,
         candle.timestamp,
         now
+    );
+
+    // Check timestamp year is current year
+    assert!(
+        candle_time.year() == now.year(),
+        "Timestamp year {} should be current year {}",
+        candle_time.year(),
+        now.year()
     );
 
     // Check high >= low

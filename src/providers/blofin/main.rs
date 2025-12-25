@@ -1,0 +1,69 @@
+use async_trait::async_trait;
+use serde_json::Value;
+
+use crate::{
+    errors::CandlesError,
+    providers::base::BaseConnection,
+    types::{Candle, Instrument, Timeframe},
+    utils::{DataWrapper, parse_string_to_f64},
+};
+
+pub struct BloFin;
+
+#[async_trait]
+impl BaseConnection for BloFin {
+    async fn get_candles(instrument: Instrument) -> Result<Vec<Candle>, CandlesError> {
+        let blofin_timeframe = match instrument.timeframe {
+            Timeframe::M3 => "3m",
+            Timeframe::M5 => "5m",
+            Timeframe::M15 => "15m",
+            Timeframe::M30 => "30m",
+            Timeframe::H1 => "1H",
+            Timeframe::H4 => "4H",
+            Timeframe::D1 => "1D",
+            Timeframe::W1 => "1W",
+            Timeframe::MN1 => "1M",
+        };
+
+        let url = format!("https://openapi.blofin.com/api/v1/market/candles?instId={}&bar={}", instrument.pair, blofin_timeframe);
+
+        let response: DataWrapper<Vec<Value>> = reqwest::get(&url).await?.json().await?;
+
+        let mut candles = Vec::with_capacity(response.data.len());
+
+        for (index, value) in response.data.iter().enumerate().rev() {
+            let candle_array = value.as_array().ok_or_else(|| CandlesError::InvalidDataFormat {
+                index,
+                message: "Expected array for candle data".to_string(),
+            })?;
+
+            if candle_array.len() < 6 {
+                return Err(CandlesError::InvalidDataFormat {
+                    index,
+                    message: format!("Insufficient data in candle array: expected at least 6 elements, got {}", candle_array.len()),
+                });
+            }
+
+            candles.push(Candle {
+                timestamp: candle_array[0]
+                    .as_str()
+                    .ok_or_else(|| CandlesError::ParseError {
+                        field: "timestamp".to_string(),
+                        message: format!("at index {} with value {}", index, candle_array[0]),
+                    })?
+                    .parse::<i64>()
+                    .map_err(|_| CandlesError::ParseError {
+                        field: "timestamp".to_string(),
+                        message: format!("at index {} with value {}", index, candle_array[0]),
+                    })?,
+                open: parse_string_to_f64(&candle_array[1], "open price", index)?,
+                high: parse_string_to_f64(&candle_array[2], "high price", index)?,
+                low: parse_string_to_f64(&candle_array[3], "low price", index)?,
+                close: parse_string_to_f64(&candle_array[4], "close price", index)?,
+                volume: parse_string_to_f64(&candle_array[6], "volume", index)?,
+            });
+        }
+
+        Ok(candles)
+    }
+}

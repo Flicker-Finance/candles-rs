@@ -3,11 +3,15 @@
         "bingx",
         "blofin",
         "BTCUSDT",
+        "Datelike",
+        "keccak",
         "ohlcv",
         "Onik",
+        "outputsize",
         "reqwest",
         "Sahakyan",
         "serde",
+        "solana",
         "vtable"
     ]
 }

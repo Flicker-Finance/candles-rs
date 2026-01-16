@@ -3,6 +3,7 @@ use crate::{
     modules::{address::main::parse_address, chains::Chain},
 };
 
+#[derive(Debug, Clone)]
 pub struct Pool {
     pub token_address: String,
     pub chain: Chain,

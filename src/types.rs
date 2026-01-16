@@ -30,6 +30,7 @@ pub enum Timeframe {
 #[derive(Debug, Clone)]
 pub struct Instrument {
     pub asset_id: String,
+    pub asset_symbol: String,
     pub pair: String,
     pub limit: Option<u64>,
     pub connection: Connection,

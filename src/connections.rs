@@ -11,6 +11,7 @@ use crate::{
     providers::bybit::main::Bybit,
     providers::coingecko::main::CoinGecko,
     providers::htx::main::HTX,
+    providers::hyperliquid::main::Hyperliquid,
     providers::mexc::main::Mexc,
     providers::okx::main::OKX,
     providers::uniswap_v3::main::UniswapV3,
@@ -28,6 +29,7 @@ pub enum Connection {
     BingX,
     HTX,
     Mexc,
+    Hyperliquid,
 
     UniswapV3,
     CoinGecko,
@@ -45,6 +47,7 @@ impl Connection {
             Connection::BingX => BingX::get_candles(instrument).await,
             Connection::HTX => HTX::get_candles(instrument).await,
             Connection::Mexc => Mexc::get_candles(instrument).await,
+            Connection::Hyperliquid => Hyperliquid::get_candles(instrument).await,
             Connection::UniswapV3 => UniswapV3::get_candles(instrument).await,
             Connection::CoinGecko => CoinGecko::get_candles(instrument).await,
             Connection::AlphaVantage => AlphaVantage::get_candles(instrument).await,

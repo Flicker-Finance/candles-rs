@@ -52,6 +52,12 @@ pub mod coingecko {
     pub mod types;
 }
 
+pub mod hyperliquid {
+    mod __test__;
+    pub mod main;
+    mod types;
+}
+
 // Stocks
 
 pub mod alpha_vantage {

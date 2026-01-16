@@ -1,6 +1,6 @@
 # candles-rs
 
-A Rust library for fetching candlestick (OHLCV) data from multiple cryptocurrency exchanges and decentralized exchanges. Built by [Flicker](https://flicker.finance), this library provides a unified interface to access market data from centralized and decentralized sources.
+A Rust library for fetching candlestick (OHLCV) data from multiple cryptocurrency exchanges, decentralized exchanges, and stock markets. Built by [Flicker](https://flicker.finance), this library provides a unified interface to access market data from centralized exchanges, decentralized sources, and traditional stock markets.
 
 ## Features
 
@@ -13,6 +13,7 @@ A Rust library for fetching candlestick (OHLCV) data from multiple cryptocurrenc
     - BingX
     - HTX (Huobi)
     - MEXC (Spot & Derivatives)
+    - Hyperliquid (Derivatives)
   - **Decentralized Exchanges (DEX)**:
     - Uniswap V3
       - Supports: Ethereum, Polygon, Arbitrum, Optimism, Base, BNB Chain, Celo, Avalanche
@@ -23,6 +24,10 @@ A Rust library for fetching candlestick (OHLCV) data from multiple cryptocurrenc
       - Supports all major EVM chains
       - Pre-aggregated OHLCV data for DEX pairs
       - Fast and reliable via Coingecko infrastructure
+  - **Stock Markets**:
+    - AlphaVantage
+      - Daily, weekly, monthly, and intraday data
+      - Supports all major stock symbols
 - **Unified Interface**: Common API across all exchanges
 - **Multiple Timeframes**: Support for 3m, 5m, 15m, 30m, 1h, 4h, 1d, 1w, 1M intervals
 - **Async/Await**: Built with async Rust for efficient data fetching
@@ -51,9 +56,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let instrument = Instrument {
         asset_id: "bitcoin".to_string(),
         pair: "BTCUSDT".to_string(),
+        asset_symbol: "BTC".to_string(),
         connection: Connection::Binance,
         market_type: MarketType::Spot,
         timeframe: Timeframe::H1,
+        limit: None,
     };
 
     // Fetch candlestick data
@@ -97,6 +104,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 #### MEXC
 - **Spot & Derivatives**: Exchange-specific implementation
 
+#### Hyperliquid
+- **Derivatives**: `https://api.hyperliquid.xyz/info`
+- Uses single coin symbols (e.g., "BTC", "ETH", "SOL") via the `asset_symbol` field
+
 ### Decentralized Exchanges (DEX)
 
 #### Uniswap V3
@@ -132,10 +143,12 @@ use candles_rs::{connections::Connection, types::*};
 
 let instrument = Instrument {
     asset_id: "ethereum_usdc_weth".to_string(),
-    pair: "ethereum_0x88e6a0c2ddd26feeb64f039a2c41296fcb3f5640_inverted".to_string(),
+    pair: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2_ethereum_0x88e6a0c2ddd26feeb64f039a2c41296fcb3f5640".to_string(),
+    asset_symbol: "WETH".to_string(),
     connection: Connection::UniswapV3,
     market_type: MarketType::Spot,
     timeframe: Timeframe::M15,
+    limit: Some(100),
 };
 
 let candles = instrument.connection.get_candles(instrument).await?;
@@ -146,20 +159,35 @@ let candles = instrument.connection.get_candles(instrument).await?;
 - **Important**: Must be a Uniswap V3 **pool** address, not a router contract
 - Find pool addresses at [Uniswap Info](https://info.uniswap.org)
 
+### Stock Markets
+
+#### AlphaVantage
+Fetches stock market data from AlphaVantage API.
+
+**Configuration**:
+```bash
+export ALPHA_VANTAGE_API_KEY="your-api-key"
+```
+
+**Supported Timeframes**: 5m, 15m, 30m, 1h (intraday requires premium), 1d, 1w, 1M
+
 **Usage**:
 ```rust
 use candles_rs::{connections::Connection, types::*};
 
 let instrument = Instrument {
-    asset_id: "ethereum_usdc_weth".to_string(),
-    pair: "eth_0x88e6a0c2ddd26feeb64f039a2c41296fcb3f5640".to_string(),
-    connection: Connection::Moralis,
+    asset_id: "NVDA".to_string(),
+    pair: "NVDA".to_string(),
+    asset_symbol: "NVDA".to_string(),
+    connection: Connection::AlphaVantage,
     market_type: MarketType::Spot,
-    timeframe: Timeframe::M15,
+    timeframe: Timeframe::D1,
+    limit: None,
 };
 
 let candles = instrument.connection.get_candles(instrument).await?;
 ```
+
 ## Data Types
 
 ### Timeframe
@@ -221,9 +249,11 @@ use candles_rs::{connections::Connection, types::*};
 let okx_instrument = Instrument {
     asset_id: "BTC-USDT".to_string(),
     pair: "BTC-USDT".to_string(),
+    asset_symbol: "BTC".to_string(),
     connection: Connection::OKX,
     market_type: MarketType::Spot,
     timeframe: Timeframe::H4,
+    limit: None,
 };
 
 let candles = okx_instrument.connection.get_candles(okx_instrument).await?;
@@ -242,9 +272,11 @@ for timeframe in timeframes {
     let instrument = Instrument {
         asset_id: "ETHUSDT".to_string(),
         pair: "ETHUSDT".to_string(),
+        asset_symbol: "ETH".to_string(),
         connection: Connection::Binance,
         market_type: MarketType::Spot,
         timeframe,
+        limit: None,
     };
 
     let candles = instrument.connection.get_candles(instrument).await?;

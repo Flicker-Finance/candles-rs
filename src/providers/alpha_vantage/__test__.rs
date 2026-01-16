@@ -42,6 +42,7 @@ mod test {
         let instrument = Instrument {
             asset_id: "NVDA".to_owned(),
             pair: "NVDA".to_owned(),
+            asset_symbol: "NVDA".to_owned(),
             connection: Connection::AlphaVantage,
             market_type: MarketType::Spot,
             limit: None,
@@ -64,6 +65,7 @@ mod test {
         let instrument = Instrument {
             asset_id: "AAPL".to_owned(),
             pair: "AAPL".to_owned(),
+            asset_symbol: "AAPL".to_owned(),
             connection: Connection::AlphaVantage,
             market_type: MarketType::Spot,
             limit: None,
@@ -87,6 +89,7 @@ mod test {
         let instrument = Instrument {
             asset_id: "MSFT".to_owned(),
             pair: "MSFT".to_owned(),
+            asset_symbol: "MSFT".to_owned(),
             connection: Connection::AlphaVantage,
             market_type: MarketType::Spot,
             limit: None,
@@ -109,6 +112,7 @@ mod test {
         let instrument = Instrument {
             asset_id: "INVALID_SYMBOL_XYZ123".to_owned(),
             pair: "INVALID_SYMBOL_XYZ123".to_owned(),
+            asset_symbol: "INVALID_SYMBOL_XYZ123".to_owned(),
             connection: Connection::AlphaVantage,
             market_type: MarketType::Spot,
             limit: None,
@@ -124,6 +128,7 @@ mod test {
         let instrument = Instrument {
             asset_id: "NVDA".to_owned(),
             pair: "NVDA".to_owned(),
+            asset_symbol: "NVDA".to_owned(),
             connection: Connection::AlphaVantage,
             market_type: MarketType::Spot,
             limit: None,

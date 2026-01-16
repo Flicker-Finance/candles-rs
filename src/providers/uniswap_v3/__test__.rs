@@ -18,6 +18,7 @@ mod test {
         let instrument = Instrument {
             asset_id: "ethereum_usdc_weth".to_owned(),
             pair: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2_ethereum_0x4e68Ccd3E89f51C3074ca5072bbAC773960dFa36".to_owned(),
+            asset_symbol: "WETH".to_owned(),
             connection: Connection::UniswapV3,
             market_type: MarketType::Spot,
             timeframe: Timeframe::M15,
@@ -40,6 +41,7 @@ mod test {
         let instrument = Instrument {
             asset_id: "base_test_pool".to_owned(),
             pair: "0x4200000000000000000000000000000000000006_base_0x88A43bbDF9D098eEC7bCEda4e2494615dfD9bB9C".to_owned(),
+            asset_symbol: "WETH".to_owned(),
             connection: Connection::UniswapV3,
             market_type: MarketType::Spot,
             limit: Some(5),

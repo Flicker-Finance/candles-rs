@@ -14,6 +14,7 @@ mod test {
         let instrument = Instrument {
             asset_id: "ethereum_usdc_weth".to_owned(),
             pair: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2_eth_0x88e6a0c2ddd26feeb64f039a2c41296fcb3f5640".to_owned(),
+            asset_symbol: "WETH".to_owned(),
             connection: Connection::CoinGecko,
             market_type: MarketType::Spot,
             limit: None,
@@ -32,6 +33,7 @@ mod test {
             asset_id: "base_test_pool".to_owned(),
             limit: None,
             pair: "0x3054e8f8fba3055a42e5f5228a2a4e2ab1326933_base_0xE1BeD6AAdBa5471700f16A47EEe2504346B724aD".to_owned(),
+            asset_symbol: "WETH".to_owned(),
             connection: Connection::CoinGecko,
             market_type: MarketType::Spot,
             timeframe: Timeframe::H1,
@@ -48,6 +50,7 @@ mod test {
         let instrument = Instrument {
             asset_id: "test".to_owned(),
             pair: "invalid_format_missing_underscore".to_owned(),
+            asset_symbol: "TEST".to_owned(),
             connection: Connection::CoinGecko,
             limit: None,
             market_type: MarketType::Spot,
@@ -70,6 +73,7 @@ mod test {
         let instrument = Instrument {
             asset_id: "test".to_owned(),
             pair: "nounderscore".to_owned(),
+            asset_symbol: "TEST".to_owned(),
             connection: Connection::CoinGecko,
             limit: None,
             market_type: MarketType::Spot,

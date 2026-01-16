@@ -14,6 +14,7 @@ mod test {
         let instrument = Instrument {
             asset_id: "bitcoin".to_owned(),
             pair: "BTC-USDT".to_owned(),
+            asset_symbol: "BTC".to_owned(),
             connection: Connection::BloFin,
             market_type: MarketType::Spot,
             timeframe: Timeframe::H1,
@@ -31,6 +32,7 @@ mod test {
         let instrument = Instrument {
             asset_id: "bitcoin".to_owned(),
             pair: "BTC-USDT".to_owned(),
+            asset_symbol: "BTC".to_owned(),
             connection: Connection::BloFin,
             market_type: MarketType::Derivatives,
             limit: None,

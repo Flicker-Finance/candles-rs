@@ -25,7 +25,18 @@ impl BaseConnection for BloFin {
             Timeframe::MN1 => "1M",
         };
 
-        let url = format!("https://openapi.blofin.com/api/v1/market/candles?instId={}&bar={}", instrument.pair, blofin_timeframe);
+        let limit = instrument.limit.unwrap_or(100).min(100);
+        let mut url = format!(
+            "https://openapi.blofin.com/api/v1/market/candles?instId={}&bar={}&limit={}",
+            instrument.pair, blofin_timeframe, limit
+        );
+
+        if let Some(end_time) = instrument.end_time {
+            url.push_str(&format!("&after={}", end_time));
+        }
+        if let Some(start_time) = instrument.start_time {
+            url.push_str(&format!("&before={}", start_time));
+        }
 
         let response: DataWrapper<Vec<Value>> = reqwest::get(&url).await?.json().await?;
 

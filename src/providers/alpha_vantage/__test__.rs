@@ -46,6 +46,8 @@ mod test {
             connection: Connection::AlphaVantage,
             market_type: MarketType::Spot,
             limit: None,
+            start_time: None,
+            end_time: None,
             timeframe: Timeframe::D1,
         };
 
@@ -69,6 +71,8 @@ mod test {
             connection: Connection::AlphaVantage,
             market_type: MarketType::Spot,
             limit: None,
+            start_time: None,
+            end_time: None,
             timeframe: Timeframe::W1,
         };
 
@@ -93,6 +97,8 @@ mod test {
             connection: Connection::AlphaVantage,
             market_type: MarketType::Spot,
             limit: None,
+            start_time: None,
+            end_time: None,
             timeframe: Timeframe::M5,
         };
 
@@ -116,6 +122,8 @@ mod test {
             connection: Connection::AlphaVantage,
             market_type: MarketType::Spot,
             limit: None,
+            start_time: None,
+            end_time: None,
             timeframe: Timeframe::D1,
         };
 
@@ -132,6 +140,8 @@ mod test {
             connection: Connection::AlphaVantage,
             market_type: MarketType::Spot,
             limit: None,
+            start_time: None,
+            end_time: None,
             timeframe: Timeframe::M3,
         };
 

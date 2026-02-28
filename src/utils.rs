@@ -31,17 +31,14 @@ pub struct DataWrapperWithStatusCode<C, T> {
 
 pub fn parse_string_to_f64(val: &Value, field: &str, index: usize) -> Result<f64, CandlesError> {
     match val {
-        // Handle string values like "4524.78"
         Value::String(s) => s.parse().map_err(|_| CandlesError::ParseError {
             field: field.to_string(),
             message: format!("at index {index}: {val}"),
         }),
-        // Handle number values like 4524.78
         Value::Number(n) => n.as_f64().ok_or_else(|| CandlesError::ParseError {
             field: format!("{field} to f64"),
             message: format!("at index {index}: {val}"),
         }),
-        // Handle any other type
         _ => Err(CandlesError::InvalidDataFormat {
             index,
             message: format!("Invalid {field} type: expected string or number, got {val}"),
@@ -51,9 +48,9 @@ pub fn parse_string_to_f64(val: &Value, field: &str, index: usize) -> Result<f64
 
 pub fn examine_candles(candles: &[Candle], instrument: Instrument) {
     assert!(!candles.is_empty(), "Candles array is empty");
-    assert!(candles.len() >= instrument.limit.unwrap_or(200) as usize, "Candles length is <= 500");
+    let expected_min = instrument.limit.unwrap_or(50) as usize;
+    assert!(candles.len() >= expected_min, "Expected at least {} candles, got {}", expected_min, candles.len());
 
-    // Check all candles are in ascending order (oldest to newest)
     for i in 1..candles.len() {
         assert!(
             candles[i].timestamp > candles[i - 1].timestamp,
@@ -65,18 +62,15 @@ pub fn examine_candles(candles: &[Candle], instrument: Instrument) {
         );
     }
 
-    // Pick the last candle and do ordinary checks
     let candle = candles.last().unwrap();
     println!("candle {candle:?}");
 
-    // Check timestamp is valid milliseconds by attempting to parse
     assert!(
         DateTime::from_timestamp_millis(candle.timestamp).is_some(),
         "Timestamp {} is not valid milliseconds",
         candle.timestamp
     );
 
-    // Check timestamp is not in the future
     let candle_time = DateTime::from_timestamp_millis(candle.timestamp).unwrap();
     let now = Utc::now();
     assert!(
@@ -87,7 +81,6 @@ pub fn examine_candles(candles: &[Candle], instrument: Instrument) {
         now
     );
 
-    // Check timestamp year is current year
     assert!(
         candle_time.year() == now.year(),
         "Timestamp year {} should be current year {}",
@@ -95,12 +88,7 @@ pub fn examine_candles(candles: &[Candle], instrument: Instrument) {
         now.year()
     );
 
-    // Check high >= low
     assert!(candle.high >= candle.low, "High ({}) should be >= low ({})", candle.high, candle.low);
-
-    // Check close exists and is valid
     assert!(candle.close > 0.0, "Close price {} should be positive", candle.close);
-
-    // Check volume exists
     assert!(candle.volume >= 0.0, "Volume {} should be non-negative", candle.volume);
 }

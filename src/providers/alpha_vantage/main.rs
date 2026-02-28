@@ -15,7 +15,6 @@ pub struct AlphaVantage;
 #[async_trait]
 impl BaseConnection for AlphaVantage {
     async fn get_candles(instrument: Instrument) -> Result<Vec<Candle>, CandlesError> {
-        // Validate timeframe first (before API key check)
         let (function, interval, time_series_key) = match instrument.timeframe {
             Timeframe::M5 => ("TIME_SERIES_INTRADAY", Some("5min"), "Time Series (5min)"),
             Timeframe::M15 => ("TIME_SERIES_INTRADAY", Some("15min"), "Time Series (15min)"),
@@ -57,7 +56,6 @@ impl BaseConnection for AlphaVantage {
 
         let json: Value = response.json().await.map_err(|e| CandlesError::JsonParseError(format!("Failed to parse response: {e}")))?;
 
-        // Check for API error messages
         if let Some(error_message) = json.get("Error Message") {
             return Err(CandlesError::ApiError(error_message.as_str().unwrap_or("Unknown error").to_string()));
         }
@@ -114,7 +112,6 @@ impl BaseConnection for AlphaVantage {
             });
         }
 
-        // Sort by timestamp ascending
         candles.sort_by_key(|c| c.timestamp);
 
         Ok(candles)

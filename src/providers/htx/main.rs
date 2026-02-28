@@ -30,16 +30,25 @@ impl BaseConnection for HTX {
             Timeframe::MN1 => "1mon",
         };
 
+        let size = instrument.limit.unwrap_or(1000).min(2000);
         let url = match instrument.market_type {
             MarketType::Spot => format!(
-                "https://api.huobi.pro/market/history/kline?symbol={}&period={}&size=1000",
+                "https://api.huobi.pro/market/history/kline?symbol={}&period={}&size={}",
                 instrument.pair.to_lowercase(),
-                htx_timeframe
+                htx_timeframe,
+                size
             ),
-            MarketType::Derivatives => format!(
-                "https://api.hbdm.com/linear-swap-ex/market/history/kline?contract_code={}&period={}&size=1000",
-                instrument.pair, htx_timeframe
-            ),
+            MarketType::Derivatives => {
+                let mut u = format!(
+                    "https://api.hbdm.com/linear-swap-ex/market/history/kline?contract_code={}&period={}&size={}",
+                    instrument.pair, htx_timeframe, size
+                );
+                if let Some(end_time) = instrument.end_time {
+                    let from_seconds = (end_time / 1000) - (size as i64 * instrument.timeframe.to_ms() / 1000);
+                    u.push_str(&format!("&from={}", from_seconds));
+                }
+                u
+            }
         };
 
         let response: DataWrapper<Vec<HtxKlineResponse>> = reqwest::get(&url).await?.json().await?;

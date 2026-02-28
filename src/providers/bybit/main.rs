@@ -30,13 +30,18 @@ impl BaseConnection for Bybit {
             MarketType::Derivatives => "linear",
         };
 
-        let url = format!(
+        let limit = instrument.limit.unwrap_or(1000).min(1000);
+        let mut url = format!(
             "https://api.bybit.com/v5/market/kline?category={}&symbol={}&interval={}&limit={}",
-            category,
-            instrument.pair,
-            bybit_timeframe,
-            instrument.limit.unwrap_or(1000)
+            category, instrument.pair, bybit_timeframe, limit
         );
+
+        if let Some(end_time) = instrument.end_time {
+            url.push_str(&format!("&end={}", end_time));
+        }
+        if let Some(start_time) = instrument.start_time {
+            url.push_str(&format!("&start={}", start_time));
+        }
 
         let response: ResultWrapper<BybitKlineResponse> = reqwest::get(&url).await?.json().await?;
 

@@ -33,12 +33,24 @@ impl BaseConnection for Mexc {
                     Timeframe::MN1 => "1M",
                 };
 
-                let url = format!(
-                    "https://api.mexc.com/api/v3/klines?symbol={}&interval={}&limit={}",
-                    instrument.pair,
-                    mexc_timeframe,
-                    instrument.limit.unwrap_or(1000)
-                );
+                let limit = instrument.limit.unwrap_or(500).min(500);
+                let mut url = format!("https://api.mexc.com/api/v3/klines?symbol={}&interval={}&limit={}", instrument.pair, mexc_timeframe, limit);
+
+                // MEXC requires startTime and endTime together; endTime is not inclusive (+1ms)
+                match (instrument.start_time, instrument.end_time) {
+                    (Some(start_time), Some(end_time)) => {
+                        url.push_str(&format!("&startTime={}&endTime={}", start_time, end_time + 1));
+                    }
+                    (None, Some(end_time)) => {
+                        let start_time = end_time - (limit as i64 * instrument.timeframe.to_ms());
+                        url.push_str(&format!("&startTime={}&endTime={}", start_time, end_time + 1));
+                    }
+                    (Some(start_time), None) => {
+                        let end_time = start_time + (limit as i64 * instrument.timeframe.to_ms());
+                        url.push_str(&format!("&startTime={}&endTime={}", start_time, end_time + 1));
+                    }
+                    (None, None) => {}
+                }
 
                 let response: Vec<Vec<Value>> = reqwest::get(&url).await?.json().await?;
                 let mut candles = Vec::with_capacity(response.len());

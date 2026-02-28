@@ -35,11 +35,18 @@ impl BaseConnection for CoinGecko {
         };
         let url = format!("https://api.geckoterminal.com/api/v2/networks/{network}/pools/{}/ohlcv/{timeframe}", pool.pool_address);
 
+        let limit = instrument.limit.unwrap_or(1000).min(1000);
+        let mut query_params: Vec<(&str, String)> = vec![("aggregate", "1".to_string()), ("limit", limit.to_string())];
+
+        if let Some(end_time) = instrument.end_time {
+            query_params.push(("before_timestamp", (end_time / 1000).to_string()));
+        }
+
         let client = reqwest::Client::new();
         let response = client
             .get(&url)
             .header("Accept", "application/json")
-            .query(&[("aggregate", "1"), ("limit", "1000")])
+            .query(&query_params)
             .send()
             .await
             .map_err(|e| CandlesError::ApiError(format!("Failed to fetch OHLCV data: {e}")))?;
@@ -70,7 +77,6 @@ impl BaseConnection for CoinGecko {
                 message: format!("at index {index}"),
             })? * 1000;
 
-            // Skip duplicate timestamps
             if candles.last().is_some_and(|last: &Candle| last.timestamp == timestamp) {
                 continue;
             }

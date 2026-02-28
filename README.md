@@ -1,45 +1,24 @@
 # candles-rs
 
-A Rust library for fetching candlestick (OHLCV) data from multiple cryptocurrency exchanges, decentralized exchanges, and stock markets. Built by [Flicker](https://flicker.finance), this library provides a unified interface to access market data from centralized exchanges, decentralized sources, and traditional stock markets.
+A Rust library for fetching candlestick (OHLCV) data from multiple cryptocurrency exchanges, DEX aggregators, and stock markets with automatic pagination. Built by [Flicker](https://flicker.finance).
 
 ## Features
 
-- **Multi-Exchange Support**: Fetch candlestick data from:
-  - **Centralized Exchanges (CEX)**:
-    - Binance (Spot & Derivatives)
-    - OKX
-    - Bybit
-    - BloFin
-    - BingX
-    - HTX (Huobi)
-    - MEXC (Spot & Derivatives)
-    - Hyperliquid (Derivatives)
-  - **Decentralized Exchanges (DEX)**:
-    - Uniswap V3
-      - Supports: Ethereum, Polygon, Arbitrum, Optimism, Base, BNB Chain, Celo, Avalanche
-      - Aggregates on-chain swap data into OHLCV candles
-      - Customizable price inversion for human-readable prices
-  - **Data Aggregators**:
-    - Coingecko Web3 Data API
-      - Supports all major EVM chains
-      - Pre-aggregated OHLCV data for DEX pairs
-      - Fast and reliable via Coingecko infrastructure
-  - **Stock Markets**:
-    - AlphaVantage
-      - Daily, weekly, monthly, and intraday data
-      - Supports all major stock symbols
-- **Unified Interface**: Common API across all exchanges
-- **Multiple Timeframes**: Support for 3m, 5m, 15m, 30m, 1h, 4h, 1d, 1w, 1M intervals
-- **Async/Await**: Built with async Rust for efficient data fetching
+- **Multi-Exchange Support**:
+  - **CEX**: Binance, OKX, Bybit, BloFin, BingX, HTX, MEXC, Hyperliquid
+  - **DEX Aggregators**: CoinGecko (GeckoTerminal)
+  - **Stocks**: AlphaVantage
+- **Automatic Pagination**: Request any number of candles (e.g., 2000+) and the library handles batching
+- **Time Range Queries**: Fetch candles by `start_time`, `end_time`, or both
+- **Multiple Timeframes**: 3m, 5m, 15m, 30m, 1h, 4h, 1d, 1w, 1M
+- **Async/Await**: Built with async Rust
 - **Type Safety**: Strongly typed with comprehensive error handling
 
 ## Installation
 
-Add this to your `Cargo.toml`:
-
 ```toml
 [dependencies]
-candles-rs = "0.1.0"
+candles-rs = "0.1.9"
 ```
 
 ## Quick Start
@@ -52,7 +31,6 @@ use candles_rs::{
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Create an instrument configuration
     let instrument = Instrument {
         asset_id: "bitcoin".to_string(),
         pair: "BTCUSDT".to_string(),
@@ -61,14 +39,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         market_type: MarketType::Spot,
         timeframe: Timeframe::H1,
         limit: None,
+        start_time: None,
+        end_time: None,
     };
 
-    // Fetch candlestick data
     let candles = instrument.connection.get_candles(instrument).await?;
 
     for candle in candles {
         println!(
-            "Time: {}, Open: {}, High: {}, Low: {}, Close: {}, Volume: {}",
+            "Time: {}, O: {}, H: {}, L: {}, C: {}, V: {}",
             candle.timestamp, candle.open, candle.high,
             candle.low, candle.close, candle.volume
         );
@@ -78,103 +57,79 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 ```
 
-## Supported Exchanges
+## Pagination
 
-### Centralized Exchanges (CEX)
+Request more candles than a single API call allows. The library automatically paginates backwards:
 
-#### Binance
-- **Spot Markets**: `https://www.binance.com/api/v3/klines`
-- **Derivatives**: `https://fapi.binance.com/fapi/v1/klines`
-
-#### OKX
-- **All Markets**: `https://www.okx.com/api/v5/market/candles`
-
-#### Bybit
-- **All Markets**: Exchange-specific implementation
-
-#### BloFin
-- **All Markets**: Exchange-specific implementation
-
-#### BingX
-- **All Markets**: Exchange-specific implementation
-
-#### HTX (Huobi)
-- **All Markets**: Exchange-specific implementation
-
-#### MEXC
-- **Spot & Derivatives**: Exchange-specific implementation
-
-#### Hyperliquid
-- **Derivatives**: `https://api.hyperliquid.xyz/info`
-- Uses single coin symbols (e.g., "BTC", "ETH", "SOL") via the `asset_symbol` field
-
-### Decentralized Exchanges (DEX)
-
-#### Uniswap V3
-Fetches on-chain swap data using direct RPC calls via Alloy.
-
-**Supported Chains**: Ethereum, Base, BNB Chain
-
-**Configuration**:
-```bash
-# Global RPC override (applies to all chains)
-export RPC_URL="https://your-rpc-endpoint.com"
-
-# Or per-chain RPC URLs
-export ETHEREUM_RPC_URL="https://eth-mainnet.g.alchemy.com/v2/YOUR-API-KEY"
-export BASE_RPC_URL="https://base-mainnet.g.alchemy.com/v2/YOUR-API-KEY"
-export BNB_RPC_URL="https://bsc-dataseed1.binance.org"
-
-# Optional: Adjust batch size for eth_getLogs (default: 1000)
-# Some RPCs have stricter limits (e.g., 500 for some Polygon nodes)
-export UNISWAP_BATCH_SIZE=500
-
-# Optional: Set minimum number of candles required (default: 250)
-export UNISWAP_MIN_CANDLES=300
-
-# Optional: Set delay between RPC calls in milliseconds (default: 50)
-# Increase this if you're hitting rate limits (e.g., 200ms = 5 calls/second)
-export UNISWAP_RPC_DELAY_MS=100
-```
-
-**Usage**:
 ```rust
-use candles_rs::{connections::Connection, types::*};
-
 let instrument = Instrument {
-    asset_id: "ethereum_usdc_weth".to_string(),
-    pair: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2_ethereum_0x88e6a0c2ddd26feeb64f039a2c41296fcb3f5640".to_string(),
-    asset_symbol: "WETH".to_string(),
-    connection: Connection::UniswapV3,
+    asset_id: "bitcoin".to_string(),
+    pair: "BTCUSDT".to_string(),
+    asset_symbol: "BTC".to_string(),
+    connection: Connection::Binance,
     market_type: MarketType::Spot,
-    timeframe: Timeframe::M15,
-    limit: Some(100),
+    timeframe: Timeframe::H1,
+    limit: Some(2000),
+    start_time: None,
+    end_time: None,
 };
 
+// Returns 2000 H1 candles in ascending order
 let candles = instrument.connection.get_candles(instrument).await?;
 ```
 
-**Pair Format**: `chain_poolAddress` or `chain_poolAddress_inverted`
-- Use `_inverted` suffix for human-readable prices (e.g., $4,021 vs 0.000249)
-- **Important**: Must be a Uniswap V3 **pool** address, not a router contract
-- Find pool addresses at [Uniswap Info](https://info.uniswap.org)
+You can also specify a time range:
 
-### Stock Markets
-
-#### AlphaVantage
-Fetches stock market data from AlphaVantage API.
-
-**Configuration**:
-```bash
-export ALPHA_VANTAGE_API_KEY="your-api-key"
+```rust
+let instrument = Instrument {
+    // ...
+    limit: None,
+    start_time: Some(1704067200000), // epoch ms
+    end_time: Some(1706745600000),
+    // ...
+};
 ```
 
-**Supported Timeframes**: 5m, 15m, 30m, 1h (intraday requires premium), 1d, 1w, 1M
+## Supported Exchanges
 
-**Usage**:
+| Exchange | Spot | Derivatives | Max per batch |
+|----------|------|-------------|---------------|
+| Binance | Y | Y | 1000 |
+| OKX | Y | Y | 100 (auto-switches to /history-candles for older data) |
+| Bybit | Y | Y | 1000 |
+| BloFin | Y | Y | 100 |
+| BingX | Y | Y | 1000 |
+| HTX | Y | Y | 2000 (Spot has no time-based pagination) |
+| MEXC | Y | Y | 500 |
+| Hyperliquid | - | Y | 5000 |
+| CoinGecko | Y | - | 1000 |
+| AlphaVantage | Y | - | Full dataset |
+
+### CoinGecko (GeckoTerminal)
+
+Pair format: `tokenAddress_chain_poolAddress`
+
 ```rust
-use candles_rs::{connections::Connection, types::*};
+let instrument = Instrument {
+    asset_id: "ethereum_usdc_weth".to_string(),
+    pair: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2_eth_0x88e6a0c2ddd26feeb64f039a2c41296fcb3f5640".to_string(),
+    asset_symbol: "WETH".to_string(),
+    connection: Connection::CoinGecko,
+    market_type: MarketType::Spot,
+    timeframe: Timeframe::H1,
+    limit: None,
+    start_time: None,
+    end_time: None,
+};
+```
 
+Supported chains: Ethereum, Base, BNB Chain, Solana
+
+### AlphaVantage
+
+Requires `ALPHA_VANTAGE_API_KEY` environment variable.
+
+```rust
 let instrument = Instrument {
     asset_id: "NVDA".to_string(),
     pair: "NVDA".to_string(),
@@ -183,110 +138,39 @@ let instrument = Instrument {
     market_type: MarketType::Spot,
     timeframe: Timeframe::D1,
     limit: None,
+    start_time: None,
+    end_time: None,
 };
-
-let candles = instrument.connection.get_candles(instrument).await?;
 ```
+
+### Hyperliquid
+
+Uses single coin symbols (e.g., "BTC", "ETH", "SOL") rather than trading pairs.
 
 ## Data Types
 
-### Timeframe
 ```rust
-pub enum Timeframe {
-    M3,   // 3 minutes
-    M5,   // 5 minutes
-    M15,  // 15 minutes
-    M30,  // 30 minutes
-    H1,   // 1 hour
-    H4,   // 4 hours
-    D1,   // 1 day
-    W1,   // 1 week
-    MN1,  // 1 month
+pub struct Instrument {
+    pub asset_id: String,
+    pub asset_symbol: String,
+    pub pair: String,
+    pub limit: Option<u64>,       // Number of candles to fetch
+    pub start_time: Option<i64>,  // Epoch milliseconds
+    pub end_time: Option<i64>,    // Epoch milliseconds
+    pub connection: Connection,
+    pub market_type: MarketType,
+    pub timeframe: Timeframe,
 }
-```
 
-### MarketType
-```rust
-pub enum MarketType {
-    Spot,        // Spot trading
-    Derivatives, // Futures/derivatives
-}
-```
-
-### Candle
-```rust
 pub struct Candle {
-    pub timestamp: i64,  // Unix timestamp
-    pub open: f64,       // Opening price
-    pub high: f64,       // Highest price
-    pub low: f64,        // Lowest price
-    pub close: f64,      // Closing price
-    pub volume: f64,     // Volume in base asset
+    pub timestamp: i64,
+    pub open: f64,
+    pub high: f64,
+    pub low: f64,
+    pub close: f64,
+    pub volume: f64,
 }
 ```
-
-## Error Handling
-
-The library uses a comprehensive error system:
-
-```rust
-pub enum CandlesError {
-    ConnectionNotFound(String),  // Invalid exchange connection
-    ApiError(String),           // API request failures
-    Reqwest(reqwest::Error),    // HTTP client errors
-    Other(String),              // General errors
-}
-```
-
-## Examples
-
-### Fetching from Different Exchanges
-
-```rust
-use candles_rs::{connections::Connection, types::*};
-
-// Fetch from OKX
-let okx_instrument = Instrument {
-    asset_id: "BTC-USDT".to_string(),
-    pair: "BTC-USDT".to_string(),
-    asset_symbol: "BTC".to_string(),
-    connection: Connection::OKX,
-    market_type: MarketType::Spot,
-    timeframe: Timeframe::H4,
-    limit: None,
-};
-
-let candles = okx_instrument.connection.get_candles(okx_instrument).await?;
-```
-
-### Multiple Timeframes
-
-```rust
-let timeframes = vec![
-    Timeframe::M15,
-    Timeframe::H1,
-    Timeframe::D1,
-];
-
-for timeframe in timeframes {
-    let instrument = Instrument {
-        asset_id: "ETHUSDT".to_string(),
-        pair: "ETHUSDT".to_string(),
-        asset_symbol: "ETH".to_string(),
-        connection: Connection::Binance,
-        market_type: MarketType::Spot,
-        timeframe,
-        limit: None,
-    };
-
-    let candles = instrument.connection.get_candles(instrument).await?;
-    println!("Fetched {} candles for {:?}", candles.len(), timeframe);
-}
-```
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## License
 
@@ -294,8 +178,4 @@ This project is open source and available under the [MIT License](LICENSE).
 
 ## About Flicker Finance
 
-This library is developed and maintained by [Flicker Finance](https://flicker.finance), a platform for cryptocurrency trading and market analysis.
-
----
-
-**Note**: This library is for educational and development purposes. Always ensure you comply with each exchange's terms of service and rate limits when using their APIs.
+Developed and maintained by [Flicker Finance](https://flicker.finance).

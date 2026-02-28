@@ -13,10 +13,6 @@ use crate::{
 
 const HYPERLIQUID_API_URL: &str = "https://api.hyperliquid.xyz/info";
 
-/// Hyperliquid candle data provider.
-///
-/// Note: Hyperliquid uses single coin symbols (e.g., "BTC", "ETH", "SOL") rather than
-/// trading pairs. Set `asset_symbol` on the `Instrument` for best results.
 pub struct Hyperliquid;
 
 fn get_interval(timeframe: &Timeframe) -> Result<&'static str, CandlesError> {
@@ -33,29 +29,15 @@ fn get_interval(timeframe: &Timeframe) -> Result<&'static str, CandlesError> {
     }
 }
 
-fn get_interval_ms(timeframe: &Timeframe) -> i64 {
-    match timeframe {
-        Timeframe::M3 => 3 * 60 * 1000,
-        Timeframe::M5 => 5 * 60 * 1000,
-        Timeframe::M15 => 15 * 60 * 1000,
-        Timeframe::M30 => 30 * 60 * 1000,
-        Timeframe::H1 => 60 * 60 * 1000,
-        Timeframe::H4 => 4 * 60 * 60 * 1000,
-        Timeframe::D1 => 24 * 60 * 60 * 1000,
-        Timeframe::W1 => 7 * 24 * 60 * 60 * 1000,
-        Timeframe::MN1 => 30 * 24 * 60 * 60 * 1000,
-    }
-}
-
 #[async_trait]
 impl BaseConnection for Hyperliquid {
     async fn get_candles(instrument: Instrument) -> Result<Vec<Candle>, CandlesError> {
         let interval = get_interval(&instrument.timeframe)?;
-        let limit = instrument.limit.unwrap_or(500) as i64;
+        let limit = (instrument.limit.unwrap_or(500).min(5000)) as i64;
+        let interval_ms = instrument.timeframe.to_ms();
 
-        let end_time = Utc::now().timestamp_millis();
-        let interval_ms = get_interval_ms(&instrument.timeframe);
-        let start_time = end_time - (limit * interval_ms);
+        let end_time = instrument.end_time.unwrap_or_else(|| Utc::now().timestamp_millis());
+        let start_time = instrument.start_time.unwrap_or_else(|| end_time - (limit * interval_ms));
 
         let request = CandleSnapshotRequest {
             request_type: "candleSnapshot".to_string(),

@@ -25,10 +25,24 @@ impl BaseConnection for Binance {
             Timeframe::MN1 => "1M",
         };
 
-        let url = match instrument.market_type {
-            MarketType::Spot => format!("https://www.binance.com/api/v3/klines?symbol={}&interval={}", instrument.pair, binance_timeframe),
-            MarketType::Derivatives => format!("https://fapi.binance.com/fapi/v1/klines?symbol={}&interval={}", instrument.pair, binance_timeframe),
+        let limit = instrument.limit.unwrap_or(1000).min(1000);
+        let mut url = match instrument.market_type {
+            MarketType::Spot => format!(
+                "https://www.binance.com/api/v3/klines?symbol={}&interval={}&limit={}",
+                instrument.pair, binance_timeframe, limit
+            ),
+            MarketType::Derivatives => format!(
+                "https://fapi.binance.com/fapi/v1/klines?symbol={}&interval={}&limit={}",
+                instrument.pair, binance_timeframe, limit
+            ),
         };
+
+        if let Some(end_time) = instrument.end_time {
+            url.push_str(&format!("&endTime={}", end_time));
+        }
+        if let Some(start_time) = instrument.start_time {
+            url.push_str(&format!("&startTime={}", start_time));
+        }
 
         let response = reqwest::get(&url).await.map_err(|e| CandlesError::ApiError(e.to_string()))?;
 

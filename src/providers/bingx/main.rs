@@ -30,7 +30,15 @@ impl BaseConnection for BingX {
             MarketType::Derivatives => "/openApi/swap/v3/quote/klines",
         };
 
-        let url = format!("https://open-api.bingx.com{path}?symbol={}&interval={}", instrument.pair, bingx_timeframe);
+        let limit = instrument.limit.unwrap_or(1000).min(1000);
+        let mut url = format!("https://open-api.bingx.com{path}?symbol={}&interval={}&limit={}", instrument.pair, bingx_timeframe, limit);
+
+        if let Some(end_time) = instrument.end_time {
+            url.push_str(&format!("&endTime={}", end_time));
+        }
+        if let Some(start_time) = instrument.start_time {
+            url.push_str(&format!("&startTime={}", start_time));
+        }
 
         let response: DataWrapper<Vec<Value>> = reqwest::get(&url).await?.json().await?;
 

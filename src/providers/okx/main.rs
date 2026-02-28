@@ -4,7 +4,7 @@ use serde_json::Value;
 use crate::{
     errors::CandlesError,
     providers::base::BaseConnection,
-    types::{Candle, Timeframe},
+    types::{Candle, Instrument, Timeframe},
     utils::{DataWrapper, parse_string_to_f64},
 };
 
@@ -25,7 +25,50 @@ impl BaseConnection for OKX {
             Timeframe::MN1 => "1M",
         };
 
-        let url = format!("https://www.okx.com/api/v5/market/candles?instId={}&bar={}&limit=300", instrument.pair, okx_timeframe);
+        let limit = instrument.limit.unwrap_or(100).min(100);
+
+        // /candles only stores the latest 1,440 entries; /history-candles goes back years
+        let endpoint = if let Some(end_time) = instrument.end_time {
+            let now_ms = chrono::Utc::now().timestamp_millis();
+            let history_border = now_ms - 1440 * instrument.timeframe.to_ms();
+            if end_time < history_border { "history-candles" } else { "candles" }
+        } else {
+            "candles"
+        };
+
+        let mut candles = Self::fetch_okx_candles(&instrument, okx_timeframe, limit, endpoint).await?;
+
+        if endpoint == "candles" && (candles.len() as u64) < limit && !candles.is_empty() {
+            if let Some(oldest) = candles.first().map(|c| c.timestamp) {
+                let remaining = limit - candles.len() as u64;
+                let mut hist_instrument = instrument.clone();
+                hist_instrument.end_time = Some(oldest);
+                let history_candles = Self::fetch_okx_candles(&hist_instrument, okx_timeframe, remaining, "history-candles").await?;
+                if !history_candles.is_empty() {
+                    let mut combined = history_candles;
+                    combined.append(&mut candles);
+                    candles = combined;
+                }
+            }
+        }
+
+        Ok(candles)
+    }
+}
+
+impl OKX {
+    async fn fetch_okx_candles(instrument: &Instrument, okx_timeframe: &str, limit: u64, endpoint: &str) -> Result<Vec<Candle>, CandlesError> {
+        let mut url = format!(
+            "https://www.okx.com/api/v5/market/{}?instId={}&bar={}&limit={}",
+            endpoint, instrument.pair, okx_timeframe, limit
+        );
+
+        if let Some(end_time) = instrument.end_time {
+            url.push_str(&format!("&after={}", end_time));
+        }
+        if let Some(start_time) = instrument.start_time {
+            url.push_str(&format!("&before={}", start_time));
+        }
 
         let response = reqwest::get(&url)
             .await

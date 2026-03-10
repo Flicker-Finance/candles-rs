@@ -5,7 +5,7 @@ A Rust library for fetching candlestick (OHLCV) data from multiple cryptocurrenc
 ## Features
 
 - **Multi-Exchange Support**:
-  - **CEX**: Binance, OKX, Bybit, BloFin, BingX, HTX, MEXC, Hyperliquid
+  - **CEX**: Binance, OKX, Bybit, BloFin, BingX, HTX, MEXC, Hyperliquid, FreeDX
   - **DEX Aggregators**: CoinGecko (GeckoTerminal)
   - **Stocks**: AlphaVantage
 - **Automatic Pagination**: Request any number of candles (e.g., 2000+) and the library handles batching
@@ -18,7 +18,7 @@ A Rust library for fetching candlestick (OHLCV) data from multiple cryptocurrenc
 
 ```toml
 [dependencies]
-candles-rs = "0.1.9"
+candles-rs = "0.1.10"
 ```
 
 ## Quick Start
@@ -102,6 +102,7 @@ let instrument = Instrument {
 | HTX | Y | Y | 2000 (Spot has no time-based pagination) |
 | MEXC | Y | Y | 500 |
 | Hyperliquid | - | Y | 5000 |
+| FreeDX | Y | Y | 300 |
 | CoinGecko | Y | - | 1000 |
 | AlphaVantage | Y | - | Full dataset |
 
@@ -142,6 +143,10 @@ let instrument = Instrument {
     end_time: None,
 };
 ```
+
+### FreeDX
+
+Spot symbol: `BTC-USDT`, Futures symbol: `BTC-PERP`. Supported timeframes: 5m, 15m, 30m, 1h, 4h. Volume is automatically converted from quote to base asset.
 
 ### Hyperliquid
 

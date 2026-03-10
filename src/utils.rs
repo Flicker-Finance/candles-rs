@@ -62,8 +62,14 @@ pub fn examine_candles(candles: &[Candle], instrument: Instrument) {
         );
     }
 
+    println!(
+        "candles: count={}, first_ts={}, last_ts={}",
+        candles.len(),
+        candles.first().unwrap().timestamp,
+        candles.last().unwrap().timestamp
+    );
+
     let candle = candles.last().unwrap();
-    println!("candle {candle:?}");
 
     assert!(
         DateTime::from_timestamp_millis(candle.timestamp).is_some(),
@@ -91,4 +97,14 @@ pub fn examine_candles(candles: &[Candle], instrument: Instrument) {
     assert!(candle.high >= candle.low, "High ({}) should be >= low ({})", candle.high, candle.low);
     assert!(candle.close > 0.0, "Close price {} should be positive", candle.close);
     assert!(candle.volume >= 0.0, "Volume {} should be non-negative", candle.volume);
+
+    // Volume should be in base asset, not quote. If volume >> close, it's likely quote volume.
+    if candle.close >= 1.0 {
+        assert!(
+            candle.volume < candle.close * 1_000_000.0,
+            "Volume ({}) looks like quote asset volume (close: {}). Should be in base asset.",
+            candle.volume,
+            candle.close
+        );
+    }
 }

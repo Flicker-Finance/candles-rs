@@ -52,6 +52,11 @@ pub mod hyperliquid {
     mod types;
 }
 
+pub mod freedx {
+    mod __test__;
+    pub mod main;
+}
+
 // Stocks
 
 pub mod alpha_vantage {

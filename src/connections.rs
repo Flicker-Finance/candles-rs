@@ -11,6 +11,7 @@ use crate::{
     providers::blofin::main::BloFin,
     providers::bybit::main::Bybit,
     providers::coingecko::main::CoinGecko,
+    providers::freedx::main::FreeDX,
     providers::htx::main::HTX,
     providers::hyperliquid::main::Hyperliquid,
     providers::mexc::main::Mexc,
@@ -30,6 +31,7 @@ pub enum Connection {
     HTX,
     Mexc,
     Hyperliquid,
+    Freedx,
 
     CoinGecko,
 
@@ -128,6 +130,7 @@ impl Connection {
             Connection::HTX => Some(2000),
             Connection::Mexc => Some(500),
             Connection::Hyperliquid => Some(5000),
+            Connection::Freedx => Some(300),
             Connection::CoinGecko => Some(1000),
             Connection::AlphaVantage => None,
         }
@@ -143,6 +146,7 @@ impl Connection {
             Connection::HTX => HTX::get_candles(instrument).await,
             Connection::Mexc => Mexc::get_candles(instrument).await,
             Connection::Hyperliquid => Hyperliquid::get_candles(instrument).await,
+            Connection::Freedx => FreeDX::get_candles(instrument).await,
             Connection::CoinGecko => CoinGecko::get_candles(instrument).await,
             Connection::AlphaVantage => AlphaVantage::get_candles(instrument).await,
         }

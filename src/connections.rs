@@ -14,6 +14,7 @@ use crate::{
     providers::freedx::main::FreeDX,
     providers::htx::main::HTX,
     providers::hyperliquid::main::Hyperliquid,
+    providers::massive::main::Massive,
     providers::mexc::main::Mexc,
     providers::okx::main::OKX,
     types::{Candle, Instrument},
@@ -36,6 +37,7 @@ pub enum Connection {
     CoinGecko,
 
     AlphaVantage,
+    Massive,
 }
 
 const MAX_PAGINATION_ITERATIONS: usize = 50;
@@ -133,6 +135,7 @@ impl Connection {
             Connection::Freedx => Some(300),
             Connection::CoinGecko => Some(1000),
             Connection::AlphaVantage => None,
+            Connection::Massive => Some(50_000),
         }
     }
 
@@ -149,6 +152,7 @@ impl Connection {
             Connection::Freedx => FreeDX::get_candles(instrument).await,
             Connection::CoinGecko => CoinGecko::get_candles(instrument).await,
             Connection::AlphaVantage => AlphaVantage::get_candles(instrument).await,
+            Connection::Massive => Massive::get_candles(instrument).await,
         }
     }
 }

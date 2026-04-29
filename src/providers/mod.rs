@@ -64,3 +64,9 @@ pub mod alpha_vantage {
     pub mod main;
     mod utils;
 }
+
+pub mod massive {
+    mod __test__;
+    pub mod main;
+    mod utils;
+}

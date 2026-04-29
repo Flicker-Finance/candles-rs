@@ -37,6 +37,7 @@ mod tests {
 
     // Integration tests require RPC access
     #[tokio::test]
+    #[ignore = "requires reachable Ethereum RPC or Alchemy fallback. Run explicitly with --ignored when configured."]
     async fn test_get_token_info_usdc() {
         // USDC on Ethereum mainnet
 

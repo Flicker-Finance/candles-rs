@@ -50,6 +50,7 @@ mod test {
     }
 
     #[tokio::test]
+    #[ignore = "hits CoinGecko public API; rate-limited (HTTP 429). Run explicitly with --ignored when needed."]
     async fn test_pagination_2000_candles() {
         let instrument = Instrument {
             asset_id: "ethereum_usdc_weth".to_owned(),

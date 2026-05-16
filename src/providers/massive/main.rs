@@ -29,6 +29,8 @@ struct AggregatesResponse {
     error: Option<String>,
     #[serde(default)]
     status: Option<String>,
+    #[serde(default)]
+    next_url: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -70,45 +72,77 @@ impl BaseConnection for Massive {
         // `sort=desc` paired with `limit=N` returns the *most recent* N bars in
         // the [from, to] window — that's what the shared pagination driver in
         // `connections.rs` expects (it then walks backwards via `end_time`).
-        let url = format!("{BASE_URL}/v2/aggs/ticker/{ticker}/range/{multiplier}/{timespan}/{from_ms}/{to_ms}?adjusted=true&sort=desc&limit={limit}");
+        let initial_url = format!("{BASE_URL}/v2/aggs/ticker/{ticker}/range/{multiplier}/{timespan}/{from_ms}/{to_ms}?adjusted=true&sort=desc&limit={limit}");
 
         let client = reqwest::Client::new();
-        let response = client
-            .get(&url)
-            .bearer_auth(&api_key)
-            .header("Accept", "application/json")
-            .send()
-            .await
-            .map_err(|e| CandlesError::ApiError(format!("Failed to fetch data: {e}")))?;
+        let mut all_bars: Vec<AggregateBar> = Vec::new();
+        let mut next_url: Option<String> = Some(initial_url);
+        let mut pages = 0u32;
 
-        if !response.status().is_success() {
-            let status = response.status().as_u16();
-            let body = response.text().await.unwrap_or_default();
-            return Err(CandlesError::HttpError { status, body });
+        // Massive often returns a tiny first page (e.g. just the current
+        // session's bars) plus a `next_url` cursor for older data. Follow the
+        // cursor until we hit the caller's requested `limit` or run out.
+        const MAX_PAGES: u32 = 100;
+
+        while let Some(url) = next_url.take() {
+            if pages >= MAX_PAGES {
+                break;
+            }
+            pages += 1;
+
+            let response = client
+                .get(&url)
+                .bearer_auth(&api_key)
+                .header("Accept", "application/json")
+                .send()
+                .await
+                .map_err(|e| CandlesError::ApiError(format!("Failed to fetch data: {e}")))?;
+
+            if !response.status().is_success() {
+                let status = response.status().as_u16();
+                let body = response.text().await.unwrap_or_default();
+                return Err(CandlesError::HttpError { status, body });
+            }
+
+            let payload: AggregatesResponse = response.json().await.map_err(|e| CandlesError::JsonParseError(format!("Failed to parse response: {e}")))?;
+
+            if let Some(err) = payload.error {
+                return Err(CandlesError::ApiError(err));
+            }
+
+            let bars = payload.results.unwrap_or_default();
+
+            // `status: "ERROR"` is also a thing on Massive; treat a non-OK
+            // status with empty results on the first page as an API error.
+            if pages == 1
+                && bars.is_empty()
+                && payload
+                    .status
+                    .as_deref()
+                    .is_some_and(|s| !s.eq_ignore_ascii_case("OK") && !s.eq_ignore_ascii_case("DELAYED"))
+            {
+                return Err(CandlesError::ApiError(format!(
+                    "Massive returned status='{}' with no results for {ticker}",
+                    payload.status.unwrap_or_default()
+                )));
+            }
+
+            let got_bars = !bars.is_empty();
+            all_bars.extend(bars);
+
+            if all_bars.len() as u64 >= limit {
+                break;
+            }
+
+            // Stop if there's no cursor, or if this page was empty (avoid
+            // tight-looping on a stuck cursor).
+            match payload.next_url {
+                Some(next) if got_bars => next_url = Some(next),
+                _ => break,
+            }
         }
 
-        let payload: AggregatesResponse = response.json().await.map_err(|e| CandlesError::JsonParseError(format!("Failed to parse response: {e}")))?;
-
-        if let Some(err) = payload.error {
-            return Err(CandlesError::ApiError(err));
-        }
-
-        // `status: "ERROR"` is also a thing on Massive; treat anything non-OK
-        // with empty results as an API error.
-        let bars = payload.results.unwrap_or_default();
-        if bars.is_empty()
-            && payload
-                .status
-                .as_deref()
-                .is_some_and(|s| !s.eq_ignore_ascii_case("OK") && !s.eq_ignore_ascii_case("DELAYED"))
-        {
-            return Err(CandlesError::ApiError(format!(
-                "Massive returned status='{}' with no results for {ticker}",
-                payload.status.unwrap_or_default()
-            )));
-        }
-
-        let mut candles: Vec<Candle> = bars
+        let mut candles: Vec<Candle> = all_bars
             .into_iter()
             .map(|b| Candle {
                 timestamp: b.t,
@@ -122,6 +156,12 @@ impl BaseConnection for Massive {
 
         // Driver expects ascending order.
         candles.sort_by_key(|c| c.timestamp);
+
+        // Trim if pagination overshot.
+        if candles.len() as u64 > limit {
+            let skip = candles.len() - limit as usize;
+            candles.drain(0..skip);
+        }
 
         Ok(candles)
     }

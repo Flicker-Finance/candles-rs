@@ -19,7 +19,7 @@ mod test {
         sleep(Duration::from_secs(secs)).await;
     }
 
-    fn check_candles(candles: &[crate::types::Candle]) {
+    fn check_candles(candles: &[crate::types::Candle], timeframe: &Timeframe) {
         assert!(!candles.is_empty(), "Candles array is empty");
 
         for i in 1..candles.len() {
@@ -30,6 +30,23 @@ mod test {
         assert!(candle.high >= candle.low, "High should be >= low");
         assert!(candle.close > 0.0, "Close price should be positive");
         assert!(candle.volume >= 0.0, "Volume should be non-negative");
+
+        // The newest candle must actually be recent. Without this, a regression
+        // that returned the *oldest* N bars would still pass the checks above.
+        // Tolerance: 2x the timeframe (so a Sunday-aligned W1 bar formed last
+        // week is fine), with a 5-day floor to cover weekends + holidays on
+        // shorter timeframes (Massive intraday is ~15min delayed too).
+        let now_ms = chrono::Utc::now().timestamp_millis();
+        let day_ms = 24 * 60 * 60 * 1000;
+        let max_lag_ms = (timeframe.to_ms() * 2).max(5 * day_ms);
+        let lag = now_ms - candle.timestamp;
+        assert!(
+            lag < max_lag_ms,
+            "Newest candle is too old for {timeframe:?}: ts={} ({}ms behind now, max allowed {}ms)",
+            candle.timestamp,
+            lag,
+            max_lag_ms
+        );
     }
 
     #[tokio::test]
@@ -50,7 +67,7 @@ mod test {
 
         match Massive::get_candles(instrument).await {
             Ok(result) => {
-                check_candles(&result);
+                check_candles(&result, &Timeframe::D1);
                 println!("Fetched {} daily candles for AAPL", result.len());
             }
             Err(err) => panic!("Failed to fetch candles: {err}"),
@@ -75,7 +92,7 @@ mod test {
 
         match Massive::get_candles(instrument).await {
             Ok(result) => {
-                check_candles(&result);
+                check_candles(&result, &Timeframe::W1);
                 println!("Fetched {} weekly candles for MSFT", result.len());
             }
             Err(err) => panic!("Failed to fetch candles: {err}"),
@@ -100,7 +117,7 @@ mod test {
 
         match Massive::get_candles(instrument).await {
             Ok(result) => {
-                check_candles(&result);
+                check_candles(&result, &Timeframe::M15);
                 println!("Fetched {} 15min candles for NVDA", result.len());
             }
             Err(err) => panic!("Failed to fetch candles: {err}"),

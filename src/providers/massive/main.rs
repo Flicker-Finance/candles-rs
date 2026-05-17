@@ -1,3 +1,5 @@
+use std::sync::OnceLock;
+
 use async_trait::async_trait;
 use serde::Deserialize;
 
@@ -18,6 +20,15 @@ const MAX_LIMIT: u64 = 50_000;
 /// `start_time`. Roughly Jan 1, 2000 in milliseconds — well before any
 /// US-listed equity has intraday data.
 const EARLIEST_FROM_MS: i64 = 946_684_800_000;
+
+/// Note on rate limits: Massive's free tier is ~5 req/min and intraday data
+/// is 15-minute delayed. A single `get_candles` call here can fire dozens of
+/// cursor requests in succession, so this provider is **not usable on the
+/// free tier** — it will hit 429s almost immediately. Paid plans only.
+fn http_client() -> &'static reqwest::Client {
+    static CLIENT: OnceLock<reqwest::Client> = OnceLock::new();
+    CLIENT.get_or_init(reqwest::Client::new)
+}
 
 pub struct Massive;
 
@@ -66,23 +77,28 @@ impl BaseConnection for Massive {
         let from_ms = instrument.start_time.unwrap_or(EARLIEST_FROM_MS);
         let to_ms = instrument.end_time.unwrap_or_else(|| chrono::Utc::now().timestamp_millis());
 
-        let limit = instrument.limit.unwrap_or(DEFAULT_LIMIT).min(MAX_LIMIT);
+        // `target_total` is BOTH the per-page hint we send to Massive (the
+        // `?limit=` query param, which the cursor URL bakes in for subsequent
+        // pages) and the total number of candles we collect before breaking
+        // out of the cursor loop. They happen to be equal — if you ever want
+        // to decouple them, split this into two named values.
+        let target_total = instrument.limit.unwrap_or(DEFAULT_LIMIT).min(MAX_LIMIT);
         let api_key = get_api_key()?;
 
-        // `sort=desc` paired with `limit=N` returns the *most recent* N bars in
-        // the [from, to] window — that's what the shared pagination driver in
-        // `connections.rs` expects (it then walks backwards via `end_time`).
-        let initial_url = format!("{BASE_URL}/v2/aggs/ticker/{ticker}/range/{multiplier}/{timespan}/{from_ms}/{to_ms}?adjusted=true&sort=desc&limit={limit}");
+        // `sort=desc` paired with `limit=N` returns the *most recent* N bars
+        // in the [from, to] window. We then follow `next_url` to walk older.
+        let initial_url = format!("{BASE_URL}/v2/aggs/ticker/{ticker}/range/{multiplier}/{timespan}/{from_ms}/{to_ms}?adjusted=true&sort=desc&limit={target_total}");
 
-        let client = reqwest::Client::new();
+        let client = http_client();
         let mut all_bars: Vec<AggregateBar> = Vec::new();
         let mut next_url: Option<String> = Some(initial_url);
-        let mut pages = 0u32;
+        let mut first_page = true;
 
         // Massive often returns a tiny first page (e.g. just the current
         // session's bars) plus a `next_url` cursor for older data. Follow the
-        // cursor until we hit the caller's requested `limit` or run out.
+        // cursor until we hit `target_total` or run out.
         const MAX_PAGES: u32 = 100;
+        let mut pages = 0u32;
 
         while let Some(url) = next_url.take() {
             if pages >= MAX_PAGES {
@@ -112,9 +128,9 @@ impl BaseConnection for Massive {
 
             let bars = payload.results.unwrap_or_default();
 
-            // `status: "ERROR"` is also a thing on Massive; treat a non-OK
-            // status with empty results on the first page as an API error.
-            if pages == 1
+            // Only fail hard on the *first* page — later empty pages just
+            // mean we've reached the end of the cursor.
+            if first_page
                 && bars.is_empty()
                 && payload
                     .status
@@ -126,11 +142,12 @@ impl BaseConnection for Massive {
                     payload.status.unwrap_or_default()
                 )));
             }
+            first_page = false;
 
             let got_bars = !bars.is_empty();
             all_bars.extend(bars);
 
-            if all_bars.len() as u64 >= limit {
+            if all_bars.len() as u64 >= target_total {
                 break;
             }
 
@@ -154,12 +171,14 @@ impl BaseConnection for Massive {
             })
             .collect();
 
-        // Driver expects ascending order.
+        // Caller expects ascending order.
         candles.sort_by_key(|c| c.timestamp);
 
-        // Trim if pagination overshot.
-        if candles.len() as u64 > limit {
-            let skip = candles.len() - limit as usize;
+        // The cursor's page size is opaque to us, so the last page can land
+        // us a bit over `target_total` — drop the oldest excess to keep the
+        // newest `target_total` bars.
+        if candles.len() as u64 > target_total {
+            let skip = candles.len() - target_total as usize;
             candles.drain(0..skip);
         }
 

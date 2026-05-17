@@ -135,7 +135,9 @@ impl Connection {
             Connection::Freedx => Some(300),
             Connection::CoinGecko => Some(1000),
             Connection::AlphaVantage => None,
-            Connection::Massive => Some(50_000),
+            // Massive paginates via `next_url` cursor internally — bypass the
+            // shared `end_time`-walking driver to avoid double pagination.
+            Connection::Massive => None,
         }
     }
 
